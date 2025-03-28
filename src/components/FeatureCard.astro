@@ -13,33 +13,3 @@ const { title, icon, description } = Astro.props;
   <h3 class="feature-title">{title}</h3>
   <p class="feature-description">{description}</p>
 </div>
-
-<style>
-  .feature {
-    background: var(--surface-alt);
-    border-radius: 12px;
-    padding: 2rem;
-    border: 1px solid var(--border);
-    transition: transform 0.2s;
-  }
-
-  .feature:hover {
-    transform: translateY(-4px);
-  }
-
-  .feature-icon {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-  }
-
-  .feature-title {
-    font-size: 1.25rem;
-    margin: 0 0 0.5rem;
-  }
-
-  .feature-description {
-    color: var(--text-muted);
-    margin: 0;
-    font-size: 0.95rem;
-  }
-</style>
