@@ -1,0 +1,27 @@
+{
+  "name": "@glandjs/docs",
+  "version": "1.0.0",
+  "description": "Official documentation site for the Gland framework.",
+  "author": "Mahdi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/glandjs/docs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/glandjs/docs/issues"
+  },
+  "homepage": "https://glandjs.github.io/docs/",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "start": "astro dev"
+  },
+  "dependencies": {
+    "astro": "^5.1.8"
+  },
+  "packageManager": "pnpm@9.15.4"
+}
