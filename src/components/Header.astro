@@ -1,0 +1,359 @@
+---
+const navItems = [
+  { name: "Home", href: "/" },
+  { name: "Docs", href: "/docs" },
+  { name: "Examples", href: "/examples" },
+  { name: "GitHub", href: "https://github.com/glandjs/gland", external: true }
+];
+---
+
+<header class="header">
+  <div class="container">
+    <a href="/" class="logo" aria-label="Gland homepage">
+      <span class="logo-text">Gland</span>
+      <span class="logo-badge">ALPHA</span>
+    </a>
+
+    <button class="mobile-menu-button" id="mobile-menu-button" aria-label="Toggle menu" aria-expanded="false">
+      <span class="menu-icon"></span>
+    </button>
+
+    <nav class="nav" id="main-nav">
+      <ul class="nav-list">
+        {navItems.map(item => (
+          <li class="nav-item">
+            <a
+              href={item.href}
+              class="nav-link"
+              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              {item.name}
+              {item.external && <span class="external-icon" aria-hidden="true">↗</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+
+      <div class="theme-toggle">
+        <button id="theme-switcher" aria-label="Toggle theme" class="theme-button">
+          <span class="sun-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" class="sun-circle"/>
+              <path d="M12 3v1m0 16v1m-9-9h1m16 0h1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707M16.364 6.364l-.707-.707M6.343 6.343l-.707-.707" class="sun-rays" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="moon-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-body" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<style>
+  /* Base variables */
+  :root {
+    --header-bg: rgba(10, 10, 10, 0.8);
+    --header-border: rgba(255, 255, 255, 0.1);
+    --text-primary: #f3f3f3;
+    --text-secondary: #a1a1aa;
+    --primary: #646cff;
+    --primary-hover: #747bff;
+    --transition: 0.2s ease;
+    --backdrop-blur: saturate(180%) blur(20px);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+    --radius-sm: 6px;
+    --radius-md: 8px;
+  }
+
+  [data-theme="light"] {
+    --header-bg: rgba(255, 255, 255, 0.8);
+    --header-border: rgba(0, 0, 0, 0.1);
+    --text-primary: #18181b;
+    --text-secondary: #71717a;
+  }
+
+  /* Header styles */
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+  }
+
+  .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0.75rem 1.5rem;
+    height: 60px;
+  }
+
+  /* Logo styles */
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    transition: opacity var(--transition);
+  }
+
+  .logo:hover {
+    opacity: 0.9;
+  }
+
+  .logo-text {
+    background: linear-gradient(90deg, #646cff, #bc52ee);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .logo-badge {
+    font-size: 0.65rem;
+    background: var(--primary);
+    color: white;
+    padding: 0.15rem 0.4rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* Navigation styles */
+  .nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .nav-list {
+    display: flex;
+    gap: 1.25rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-link {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0;
+    position: relative;
+  }
+
+  .nav-link:hover {
+    color: var(--text-primary);
+  }
+
+  .nav-link:hover::after {
+    transform: scaleX(1);
+  }
+
+  .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--primary);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform var(--transition);
+  }
+
+  .external-icon {
+    font-size: 0.8em;
+    opacity: 0.7;
+  }
+
+  /* Theme toggle styles */
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .theme-button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+  }
+
+  .theme-button:hover {
+    color: var(--text-primary);
+    background: rgba(100, 108, 255, 0.1);
+  }
+
+  .moon-icon {
+    display: none;
+  }
+
+  [data-theme="dark"] .sun-icon {
+    display: none;
+  }
+
+  [data-theme="dark"] .moon-icon {
+    display: block;
+  }
+
+  /* Mobile menu styles */
+  .mobile-menu-button {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 60;
+  }
+
+  .menu-icon {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: currentColor;
+    position: relative;
+    transition: transform 0.2s;
+  }
+
+  .menu-icon::before,
+  .menu-icon::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: currentColor;
+    left: 0;
+    transition: transform 0.2s, top 0.2s;
+  }
+
+  .menu-icon::before {
+    top: -6px;
+  }
+
+  .menu-icon::after {
+    top: 6px;
+  }
+
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .container {
+      padding: 0.75rem 1rem;
+    }
+
+    .mobile-menu-button {
+      display: block;
+    }
+
+    .nav {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      width: 100%;
+      background: var(--header-bg);
+      backdrop-filter: var(--backdrop-blur);
+      -webkit-backdrop-filter: var(--backdrop-blur);
+      border-bottom: 1px solid var(--header-border);
+      padding: 1rem;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1.5rem;
+      transform: translateY(-100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+
+    .nav[aria-expanded="true"] {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .nav-list {
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
+    }
+
+    .nav-link {
+      padding: 0.5rem 0;
+    }
+
+    .mobile-menu-button[aria-expanded="true"] .menu-icon {
+      background: transparent;
+    }
+
+    .mobile-menu-button[aria-expanded="true"] .menu-icon::before {
+      top: 0;
+      transform: rotate(45deg);
+    }
+
+    .mobile-menu-button[aria-expanded="true"] .menu-icon::after {
+      top: 0;
+      transform: rotate(-45deg);
+    }
+  }
+</style>
+
+<script>
+  if (typeof window !== 'undefined') {
+    const themeSwitcher = document.getElementById('theme-switcher');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let currentTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+
+    themeSwitcher.addEventListener('click', () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      setTheme(currentTheme);
+    });
+
+    setTheme(currentTheme);
+
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mainNav = document.getElementById('main-nav');
+
+    mobileMenuButton.addEventListener('click', () => {
+      const isExpanded = mobileMenuButton.getAttribute('aria-expanded') === 'true';
+      mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
+      mainNav.setAttribute('aria-expanded', !isExpanded);
+    });
+
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        mobileMenuButton.setAttribute('aria-expanded', 'false');
+        mainNav.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+</script>

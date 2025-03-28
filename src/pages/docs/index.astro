@@ -1,0 +1,392 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+---
+
+<Layout title="Getting Started - Gland Framework" description="Start building with Gland's event-driven framework. Learn core concepts, setup your first project, and explore advanced features">
+  <div class="docs-wrapper">
+    <aside class="docs-sidebar">
+      <nav class="docs-nav">
+        <div class="nav-group">
+          <h3 class="nav-group-title">Getting Started</h3>
+          <ul class="nav-items">
+            <li class="nav-item active">
+              <a href="/docs/intro" class="nav-link">
+                <span class="nav-icon">🚀</span>
+                Quick Start
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/docs/installation" class="nav-link">
+                <span class="nav-icon">📦</span>
+                Installation
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/docs/architecture" class="nav-link">
+                <span class="nav-icon">🏗️</span>
+                Architecture
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-group">
+          <h3 class="nav-group-title">Core Concepts</h3>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/docs/events" class="nav-link">
+                <span class="nav-icon">⚡</span>
+                Event System
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/docs/di" class="nav-link">
+                <span class="nav-icon">🧩</span>
+                Dependency Injection
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/docs/http" class="nav-link">
+                <span class="nav-icon">🌐</span>
+                HTTP Module
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div class="nav-group">
+          <h3 class="nav-group-title">Advanced Guides</h3>
+          <ul class="nav-items">
+            <li class="nav-item">
+              <a href="/docs/middleware" class="nav-link">
+                <span class="nav-icon">🛠️</span>
+                Middleware
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/docs/testing" class="nav-link">
+                <span class="nav-icon">🧪</span>
+                Testing
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="/docs/deployment" class="nav-link">
+                <span class="nav-icon">🚢</span>
+                Deployment
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <div class="content-header">
+        <h1>Getting Started with Gland</h1>
+        <p class="lead">Start building event-driven applications in minutes</p>
+      </div>
+
+      <section class="docs-section">
+        <h2 class="section-title">
+          <span class="title-icon">🎯</span>
+          Why Gland?
+        </h2>
+        <div class="prose">
+          <p>Gland reimagines server-side development with its unique event-first architecture:</p>
+          <ul class="feature-list">
+            <li>⚡️ Built for real-time applications</li>
+            <li>🔗 Protocol-agnostic design</li>
+            <li>🧩 Modular and extensible</li>
+            <li>🚀 Optimized for scale</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="docs-section">
+        <h2 class="section-title">
+          <span class="title-icon">⚡</span>
+          Quick Start
+        </h2>
+        <div class="prose">
+          <h3>Prerequisites</h3>
+          <ul>
+            <li>Node.js 18+</li>
+            <li>npm 9+ or pnpm</li>
+            <li>TypeScript 5+ (recommended)</li>
+          </ul>
+
+          <h3>Create a New Project</h3>
+          <CodeBlock lang="bash">
+            {`
+            # Create new directory
+            mkdir my-gland-app
+            cd my-gland-app
+
+            # Initialize project
+            npm init -y
+
+            # Install dependencies
+            npm install @gland/core
+            `}
+          </CodeBlock>
+
+          <h3>First Application</h3>
+          <CodeBlock lang="typescript" filename="src/app.ts" lineNumbers>
+            {`
+            import { GlandFactory } from '@gland/core';
+            import { UserController, UserChannel } from './users';
+
+            @Module({
+              controllers: [UserController],
+              channels: [UserChannel]
+            })
+            class AppModule {}
+            // Bootstrap application
+            const app = GlandFactory.create(AppModule);
+            app.listen(3000);
+            `}
+          </CodeBlock>
+        </div>
+      </section>
+
+      <section class="docs-section">
+        <h2 class="section-title">
+          <span class="title-icon">🔗</span>
+          Next Steps
+        </h2>
+        <div class="next-steps">
+          <a href="/docs/architecture" class="step-card">
+            <h3>Architecture Guide →</h3>
+            <p>Understand Gland's core architecture and event flow</p>
+          </a>
+
+          <a href="/docs/events" class="step-card">
+            <h3>Event System →</h3>
+            <p>Master event handling and cross-channel communication</p>
+          </a>
+
+          <a href="/examples" class="step-card">
+            <h3>Examples →</h3>
+            <p>Explore real-world use cases and code samples</p>
+          </a>
+        </div>
+      </section>
+    </main>
+  </div>
+</Layout>
+
+<style>
+  /* Base styles */
+  .docs-wrapper {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 4rem;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 2rem;
+    min-height: calc(100vh - 160px);
+  }
+
+  /* Sidebar styles */
+  .docs-sidebar {
+    position: sticky;
+    top: 6rem;
+    height: fit-content;
+    border-right: 1px solid var(--border);
+    padding-right: 2rem;
+  }
+
+  .nav-group {
+    margin-bottom: 2rem;
+  }
+
+  .nav-group-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin: 0 0 1rem;
+    padding: 0 1rem;
+  }
+
+  .nav-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-item {
+    margin: 0.25rem 0;
+  }
+
+  .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .nav-link:hover {
+    background: var(--surface-alt);
+    color: var(--text);
+  }
+
+  .nav-item.active .nav-link {
+    background: var(--surface-alt);
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  .nav-icon {
+    font-size: 1.1rem;
+    width: 24px;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* Content styles */
+  .docs-content {
+    max-width: 800px;
+    padding-bottom: 6rem;
+  }
+
+  .content-header {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .content-header h1 {
+    font-size: 2.75rem;
+    margin: 0 0 1rem;
+    background: linear-gradient(90deg, #fff, #aaa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .lead {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  .docs-section {
+    margin: 3rem 0;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 1.75rem;
+    margin: 0 0 2rem;
+  }
+
+  .title-icon {
+    font-size: 1.5rem;
+  }
+
+  .prose {
+    line-height: 1.7;
+    color: var(--text-muted);
+  }
+
+  .prose h3 {
+    font-size: 1.25rem;
+    margin: 2rem 0 1rem;
+    color: var(--text);
+  }
+
+  .feature-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .feature-list li {
+    padding: 1rem;
+    background: var(--surface-alt);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  /* Next steps */
+  .next-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .step-card {
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    transition: transform 0.2s;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .step-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+  }
+
+  .step-card h3 {
+    margin: 0 0 0.5rem;
+    color: var(--primary);
+  }
+
+  .step-card p {
+    margin: 0;
+    color: var(--text-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .docs-wrapper {
+      grid-template-columns: 1fr;
+      padding: 1rem;
+    }
+
+    .docs-sidebar {
+      position: static;
+      border-right: none;
+      padding-right: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 2rem;
+      padding-bottom: 2rem;
+    }
+
+    .content-header h1 {
+      font-size: 2rem;
+    }
+
+    .feature-list {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .nav-link {
+      font-size: 0.9rem;
+      padding: 0.75rem;
+    }
+
+    .content-header h1 {
+      font-size: 1.75rem;
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+    }
+  }
+</style>
