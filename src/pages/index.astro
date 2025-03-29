@@ -1,67 +1,22 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Feature from '../components/FeatureCard.astro';
-import CodeBlock from '../components/CodeBlock.astro';
+import Layout from "../layouts/Layout.astro";
+import Feature from "../components/FeatureCard.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import HeroSection from "../sections/HeroSection.astro";
 ---
 
-<Layout title="Gland - Event-Driven Framework" description="Lightweight, extensible web framework built for modern JavaScript applications">
-  <section class="hero">
-    <div class="hero-content">
-        <div class="hero-badge">
-          <span class="badge">ALPHA</span>
-          <span>Now available for testing</span>
-        </div>
-
-      <h1>Scalable & Modular <span class="gradient-text">Event-Driven</span> Applications</h1>
-
-      <p class="subtitle">
-        Gland is a lightweight, modular framework for JavaScript and TypeScript,
-        designed for scalability with a powerful event-driven architecture.
-      </p>
-
-      <div class="cta-buttons">
-        <a href="/docs/getting-started" class="button primary">
-          Get Started
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-        <a href="https://github.com/glandjs/gland" class="button secondary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" fill="currentColor"/>
-          </svg>
-          GitHub
-        </a>
-        <a href="/examples" class="button tertiary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10.3246 4.31731C10.751 2.5609 13.249 2.5609 13.6754 4.31731C13.9508 5.45193 15.2507 5.99038 16.2478 5.38285C17.7913 4.44239 19.5576 6.2087 18.6172 7.75218C18.0096 8.74925 18.5481 10.0492 19.6827 10.3246C21.4391 10.751 21.4391 13.249 19.6827 13.6754C18.5481 13.9508 18.0096 15.2507 18.6172 16.2478C19.5576 17.7913 17.7913 19.5576 16.2478 18.6172C15.2507 18.0096 13.9508 18.5481 13.6754 19.6827C13.249 21.4391 10.751 21.4391 10.3246 19.6827C10.0492 18.5481 8.74926 18.0096 7.75219 18.6172C6.2087 19.5576 4.44239 17.7913 5.38285 16.2478C5.99038 15.2507 5.45193 13.9508 4.31731 13.6754C2.5609 13.249 2.5609 10.751 4.31731 10.3246C5.45193 10.0492 5.99037 8.74926 5.38285 7.75218C4.44239 6.2087 6.2087 4.44239 7.75219 5.38285C8.74926 5.99037 10.0492 5.45193 10.3246 4.31731Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          View Examples
-        </a>
-      </div>
-    </div>
-
-      <CodeBlock lang="typescript">
-        {`
-        import { GlandFactory } from '@gland/core';
-        import { UserModule } from './user.module';
-
-        // Create app instance
-        const app = GlandFactory.create(UserModule);
-
-        // Start HTTP server
-        app.listen(3000, {
-          message: "Server running on http://localhost:3000"
-        });
-        `}
-      </CodeBlock>
-  </section>
+<Layout
+  title="Gland - Event-Driven Framework"
+  description="Lightweight, extensible web framework built for modern JavaScript applications"
+>
+  <HeroSection />
 
   <section class="features">
     <div class="features-intro">
       <h2>Why Choose Gland?</h2>
-      <p>A modern event-driven framework for scalable and modular applications.</p>
+      <p>
+        A modern event-driven framework for scalable and modular applications.
+      </p>
     </div>
 
     <div class="features-grid">
@@ -98,69 +53,76 @@ import CodeBlock from '../components/CodeBlock.astro';
     </div>
   </section>
 
-<section class="code-examples">
-  <div class="section-header">
-    <h2>Event-Driven Architecture in Action</h2>
-    <!--
+  <section class="code-examples">
+    <div class="section-header">
+      <h2>Event-Driven Architecture in Action</h2>
+      <!--
     <p class="subtitle">See how events flow through a Gland application</p>
       <div class="architecture-diagram">
         <img src="/public/event-flow.svg" alt="Gland Event Flow Diagram" />
       </div>
 
      -->
-  </div>
-
-  <div class="tabs">
-    <div class="tab-buttons">
-      <button class="tab-button active" data-tab="basic">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M14 6l-4.5 4.5 4.5 4.5V6m-4 9H6v-2h4v2m0-4H6V9h4v2m0-4H6V5h4v2m10 2h-2v6h2V7m0 8h-2v2h2v-2z"/>
-        </svg>
-        Basic Flow
-      </button>
-
-      <button class="tab-button" data-tab="advanced">
-        <svg width="20" height="20" viewBox="0 0 24 24">
-          <path fill="currentColor" d="M10 3H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1m10 10h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1M10 15H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1m13-8h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"/>
-        </svg>
-        Chained Events
-      </button>
     </div>
 
-    <!-- Basic Flow -->
-    <div class="tab-content active" data-tab="basic">
-      <div class="code-explanation">
-        <div class="explanation-text">
-          <h3>Core Event Flow</h3>
-          <ol class="flow-steps">
-            <li>
-              <span class="step-number">1</span>
-              HTTP Request is sent to <code>/users</code>
-              <span class="arrow">→</span>
-            </li>
-            <li>
-              <span class="step-number">2</span>
-              Controller emits <code>users:list</code> event with request context
-              <span class="arrow">→</span>
-            </li>
-            <li>
-              <span class="step-number">3</span>
-              Event listeners process the <code>users:list</code> event
-              <span class="arrow">→</span>
-            </li>
-            <li>
-              <span class="step-number">4</span>
-             Response event is emitted
-            </li>
-          </ol>
-        </div>
-        <CodeBlock
-          lang="typescript"
-          filename="user.controller.ts"
-          lineNumbers
-          highlightLines="5,9-11"
-        >
-        {`
+    <div class="tabs">
+      <div class="tab-buttons">
+        <button class="tab-button active" data-tab="basic">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M14 6l-4.5 4.5 4.5 4.5V6m-4 9H6v-2h4v2m0-4H6V9h4v2m0-4H6V5h4v2m10 2h-2v6h2V7m0 8h-2v2h2v-2z"
+            ></path>
+          </svg>
+          Basic Flow
+        </button>
+
+        <button class="tab-button" data-tab="advanced">
+          <svg width="20" height="20" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M10 3H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1m10 10h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1M10 15H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1m13-8h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"
+            ></path>
+          </svg>
+          Chained Events
+        </button>
+      </div>
+
+      <!-- Basic Flow -->
+      <div class="tab-content active" data-tab="basic">
+        <div class="code-explanation">
+          <div class="explanation-text">
+            <h3>Core Event Flow</h3>
+            <ol class="flow-steps">
+              <li>
+                <span class="step-number">1</span>
+                HTTP Request is sent to <code>/users</code>
+                <span class="arrow">→</span>
+              </li>
+              <li>
+                <span class="step-number">2</span>
+                Controller emits <code>users:list</code> event with request context
+                <span class="arrow">→</span>
+              </li>
+              <li>
+                <span class="step-number">3</span>
+                Event listeners process the <code>users:list</code> event
+                <span class="arrow">→</span>
+              </li>
+              <li>
+                <span class="step-number">4</span>
+                Response event is emitted
+              </li>
+            </ol>
+          </div>
+          <CodeBlock
+            lang="typescript"
+            filename="user.controller.ts"
+            lineNumbers
+            highlightLines="5,9-11"
+          >
+            {
+              `
         import { Controller, Context } from '@gland/core';
 
         @Controller('users')
@@ -174,40 +136,42 @@ import CodeBlock from '../components/CodeBlock.astro';
             });
           }
         }
-        `}
-        </CodeBlock>
+        `
+            }
+          </CodeBlock>
+        </div>
       </div>
-    </div>
 
-    <!-- Chained Events -->
-    <div class="tab-content" data-tab="advanced">
-      <div class="code-explanation">
-        <div class="explanation-text">
-          <h3>Event Processing Chain</h3>
-          <div class="event-chain">
-            <div class="event-node">
-              <span class="event-name">user:signup</span>
-              <span class="event-desc">Validate Input</span>
-            </div>
-            <div class="arrow">→</div>
-            <div class="event-node">
-              <span class="event-name">user:validated</span>
-              <span class="event-desc">Create DB Entry</span>
-            </div>
-            <div class="arrow">→</div>
-            <div class="event-node">
-              <span class="event-name">user:created</span>
-              <span class="event-desc">Send Welcome Email</span>
+      <!-- Chained Events -->
+      <div class="tab-content" data-tab="advanced">
+        <div class="code-explanation">
+          <div class="explanation-text">
+            <h3>Event Processing Chain</h3>
+            <div class="event-chain">
+              <div class="event-node">
+                <span class="event-name">user:signup</span>
+                <span class="event-desc">Validate Input</span>
+              </div>
+              <div class="arrow">→</div>
+              <div class="event-node">
+                <span class="event-name">user:validated</span>
+                <span class="event-desc">Create DB Entry</span>
+              </div>
+              <div class="arrow">→</div>
+              <div class="event-node">
+                <span class="event-name">user:created</span>
+                <span class="event-desc">Send Welcome Email</span>
+              </div>
             </div>
           </div>
-        </div>
-        <CodeBlock
-          lang="typescript"
-          filename="auth.channel.ts"
-          lineNumbers
-          highlightLines="3-5,8-10"
-        >
-        {`
+          <CodeBlock
+            lang="typescript"
+            filename="auth.channel.ts"
+            lineNumbers
+            highlightLines="3-5,8-10"
+          >
+            {
+              `
         import { Channel, On } from '@gland/core';
 
         @Channel('auth')
@@ -224,12 +188,13 @@ import CodeBlock from '../components/CodeBlock.astro';
             ctx.emit('user:created', dbUser);
           }
         }
-        `}
-        </CodeBlock>
+        `
+            }
+          </CodeBlock>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
   <!-- CTA Section -->
   <section class="cta">
@@ -238,12 +203,24 @@ import CodeBlock from '../components/CodeBlock.astro';
       <p>Join the growing community of developers building with Gland</p>
 
       <div class="cta-buttons">
-        <a href="/docs" class="button primary">
-          Documentation
-        </a>
-        <a href="https://github.com/glandjs/gland/stargazers" class="button secondary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <a href="/docs" class="button primary"> Documentation </a>
+        <a
+          href="https://github.com/glandjs/gland/stargazers"
+          class="button secondary"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
           </svg>
           Star on GitHub
         </a>
@@ -258,24 +235,70 @@ import CodeBlock from '../components/CodeBlock.astro';
 
     <div class="community-links">
       <a href="https://discord.gg/nSMaEXkMUz" class="community-link">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M18.59 5.89C17.18 5.31 14.73 5 12 5C9.27 5 6.82 5.31 5.41 5.89C5.06 6.16 4.73 6.46 4.44 6.78C2.2 9.19 1 12.07 1 15.11C1 18.15 2.2 21.03 4.44 23.44C4.73 23.76 5.06 24.06 5.41 24.33C6.82 24.91 9.27 25.22 12 25.22C14.73 25.22 17.18 24.91 18.59 24.33C18.94 24.06 19.27 23.76 19.56 23.44C21.8 21.03 23 18.15 23 15.11C23 12.07 21.8 9.19 19.56 6.78C19.27 6.46 18.94 6.16 18.59 5.89Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M7.5 17C8.6 17 9.5 16.1 9.5 15C9.5 13.9 8.6 13 7.5 13C6.4 13 5.5 13.9 5.5 15C5.5 16.1 6.4 17 7.5 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M16.5 17C17.6 17 18.5 16.1 18.5 15C18.5 13.9 17.6 13 16.5 13C15.4 13 14.5 13.9 14.5 15C14.5 16.1 15.4 17 16.5 17Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18.59 5.89C17.18 5.31 14.73 5 12 5C9.27 5 6.82 5.31 5.41 5.89C5.06 6.16 4.73 6.46 4.44 6.78C2.2 9.19 1 12.07 1 15.11C1 18.15 2.2 21.03 4.44 23.44C4.73 23.76 5.06 24.06 5.41 24.33C6.82 24.91 9.27 25.22 12 25.22C14.73 25.22 17.18 24.91 18.59 24.33C18.94 24.06 19.27 23.76 19.56 23.44C21.8 21.03 23 18.15 23 15.11C23 12.07 21.8 9.19 19.56 6.78C19.27 6.46 18.94 6.16 18.59 5.89Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+          <path
+            d="M7.5 17C8.6 17 9.5 16.1 9.5 15C9.5 13.9 8.6 13 7.5 13C6.4 13 5.5 13.9 5.5 15C5.5 16.1 6.4 17 7.5 17Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+          <path
+            d="M16.5 17C17.6 17 18.5 16.1 18.5 15C18.5 13.9 17.6 13 16.5 13C15.4 13 14.5 13.9 14.5 15C14.5 16.1 15.4 17 16.5 17Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
         </svg>
         Discord
       </a>
 
       <a href="https://twitter.com/m__mdy__m" class="community-link">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M23 3.01C22.0424 3.68549 20.9821 4.20217 19.86 4.54C19.2577 3.84751 18.4573 3.35669 17.567 3.13393C16.6767 2.91116 15.7395 2.9672 14.8821 3.29448C14.0247 3.62175 13.2884 4.2044 12.773 4.96373C12.2575 5.72307 11.9877 6.62234 12 7.54V8.54C10.2426 8.58558 8.50127 8.19586 6.93101 7.40545C5.36074 6.61503 4.01032 5.44864 3 4.01C3 4.01 -1 13 8 17C5.94053 18.398 3.48716 19.0989 1 19C10 24 21 19 21 7.5C20.9991 7.22145 20.9723 6.94358 20.92 6.67C21.9406 5.66348 22.6608 4.39271 23 3.01Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M23 3.01C22.0424 3.68549 20.9821 4.20217 19.86 4.54C19.2577 3.84751 18.4573 3.35669 17.567 3.13393C16.6767 2.91116 15.7395 2.9672 14.8821 3.29448C14.0247 3.62175 13.2884 4.2044 12.773 4.96373C12.2575 5.72307 11.9877 6.62234 12 7.54V8.54C10.2426 8.58558 8.50127 8.19586 6.93101 7.40545C5.36074 6.61503 4.01032 5.44864 3 4.01C3 4.01 -1 13 8 17C5.94053 18.398 3.48716 19.0989 1 19C10 24 21 19 21 7.5C20.9991 7.22145 20.9723 6.94358 20.92 6.67C21.9406 5.66348 22.6608 4.39271 23 3.01Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
         </svg>
         Twitter
       </a>
 
-      <a href="https://github.com/orgs/glandjs/discussions" class="community-link">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <a
+        href="https://github.com/orgs/glandjs/discussions"
+        class="community-link"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
         </svg>
         Discussions
       </a>
@@ -283,24 +306,23 @@ import CodeBlock from '../components/CodeBlock.astro';
   </section>
 </Layout>
 
-
 <script>
-  if (typeof window !== 'undefined') {
-    document.querySelectorAll('.tab-button').forEach(button => {
-      button.addEventListener('click', () => {
-        const tab = button.getAttribute('data-tab');
+  if (typeof window !== "undefined") {
+    document.querySelectorAll(".tab-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        const tab = button.getAttribute("data-tab");
 
-
-        document.querySelectorAll('.tab-button').forEach(btn => {
-          btn.classList.remove('active');
+        document.querySelectorAll(".tab-button").forEach((btn) => {
+          btn.classList.remove("active");
         });
-        button.classList.add('active');
+        button.classList.add("active");
 
-
-        document.querySelectorAll('.tab-content').forEach(content => {
-          content.classList.remove('active');
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          content.classList.remove("active");
         });
-        document.querySelector(`.tab-content[data-tab="${tab}"]`)!.classList.add('active');
+        document
+          .querySelector(`.tab-content[data-tab="${tab}"]`)!
+          .classList.add("active");
       });
     });
   }
