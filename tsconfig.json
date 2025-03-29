@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
     "paths": {
-      "@components/*": ["src/components/*"],
-      "@layouts/*": ["src/layouts/*"],
-      "@sections/*": ["src/sections/*"]
+      "@components/*": ["/src/components/*"],
+      "@layouts/*": ["/src/layouts/*"],
+      "@sections/*": ["/src/sections/*"]
     }
   },
   "extends": "astro/tsconfigs/strict",
