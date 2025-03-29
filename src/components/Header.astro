@@ -3,48 +3,74 @@ const navItems = [
   { name: "Home", href: "/docs/" },
   { name: "Docs", href: "/docs/overview" },
   { name: "Examples", href: "/docs/examples" },
-  { name: "GitHub", href: "https://github.com/glandjs/gland", external: true }
+  { name: "GitHub", href: "https://github.com/glandjs/gland", external: true },
 ];
 ---
 
 <header class="header">
   <div class="container">
-    <a href="/" class="logo" aria-label="Gland homepage">
+    <a href="/docs" class="logo" aria-label="Gland homepage">
       <span class="logo-text">Gland</span>
       <span class="logo-badge">ALPHA</span>
     </a>
 
-    <button class="mobile-menu-button" id="mobile-menu-button" aria-label="Toggle menu" aria-expanded="false">
+    <button
+      class="mobile-menu-button"
+      id="mobile-menu-button"
+      aria-label="Toggle menu"
+      aria-expanded="false"
+    >
       <span class="menu-icon"></span>
     </button>
 
     <nav class="nav" id="main-nav">
       <ul class="nav-list">
-        {navItems.map(item => (
-          <li class="nav-item">
-            <a
-              href={item.href}
-              class="nav-link"
-              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            >
-              {item.name}
-              {item.external && <span class="external-icon" aria-hidden="true">↗</span>}
-            </a>
-          </li>
-        ))}
+        {
+          navItems.map((item) => (
+            <li class="nav-item">
+              <a
+                href={item.href}
+                class="nav-link"
+                {...(item.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
+              >
+                {item.name}
+                {item.external && (
+                  <span class="external-icon" aria-hidden="true">
+                    ↗
+                  </span>
+                )}
+              </a>
+            </li>
+          ))
+        }
       </ul>
 
       <div class="theme-toggle">
-        <button id="theme-switcher" aria-label="Toggle theme" class="theme-button">
+        <button
+          id="theme-switcher"
+          aria-label="Toggle theme"
+          class="theme-button"
+        >
           <span class="sun-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" class="sun-circle"/>
-              <path d="M12 3v1m0 16v1m-9-9h1m16 0h1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707M16.364 6.364l-.707-.707M6.343 6.343l-.707-.707" class="sun-rays" stroke-width="2" stroke-linecap="round"/>
+              <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" class="sun-circle"
+              ></path>
+              <path
+                d="M12 3v1m0 16v1m-9-9h1m16 0h1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707M16.364 6.364l-.707-.707M6.343 6.343l-.707-.707"
+                class="sun-rays"
+                stroke-width="2"
+                stroke-linecap="round"></path>
             </svg>
           </span>
           <span class="moon-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" class="moon-body" stroke-width="2" stroke-linecap="round"/>
+              <path
+                d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
+                class="moon-body"
+                stroke-width="2"
+                stroke-linecap="round"></path>
             </svg>
           </span>
         </button>
