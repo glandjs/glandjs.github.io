@@ -1,9 +1,12 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import CodeBlock from '../../components/CodeBlock.astro';
+import Layout from "../../layouts/Layout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
 ---
 
-<Layout title="Getting Started - Gland Framework" description="Start building with Gland's event-driven framework. Learn core concepts, setup your first project, and explore advanced features">
+<Layout
+  title="Getting Started - Gland Framework"
+  description="Start building with Gland's event-driven framework. Learn core concepts, setup your first project, and explore advanced features"
+>
   <div class="docs-wrapper">
     <aside class="docs-sidebar">
       <nav class="docs-nav">
@@ -93,7 +96,10 @@ import CodeBlock from '../../components/CodeBlock.astro';
           Why Gland?
         </h2>
         <div class="prose">
-          <p>Gland reimagines server-side development with its unique event-first architecture:</p>
+          <p>
+            Gland reimagines server-side development with its unique event-first
+            architecture:
+          </p>
           <ul class="feature-list">
             <li>⚡️ Built for real-time applications</li>
             <li>🔗 Protocol-agnostic design</li>
@@ -118,7 +124,8 @@ import CodeBlock from '../../components/CodeBlock.astro';
 
           <h3>Create a New Project</h3>
           <CodeBlock lang="bash">
-            {`
+            {
+              `
             # Create new directory
             mkdir my-gland-app
             cd my-gland-app
@@ -128,12 +135,14 @@ import CodeBlock from '../../components/CodeBlock.astro';
 
             # Install dependencies
             npm install @gland/core
-            `}
+            `
+            }
           </CodeBlock>
 
           <h3>First Application</h3>
           <CodeBlock lang="typescript" filename="src/app.ts" lineNumbers>
-            {`
+            {
+              `
             import { GlandFactory } from '@gland/core';
             import { UserController, UserChannel } from './users';
 
@@ -145,7 +154,8 @@ import CodeBlock from '../../components/CodeBlock.astro';
             // Bootstrap application
             const app = GlandFactory.create(AppModule);
             app.listen(3000);
-            `}
+            `
+            }
           </CodeBlock>
         </div>
       </section>
