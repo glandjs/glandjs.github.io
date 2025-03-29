@@ -4,6 +4,7 @@ import HeroSection from "../sections/HeroSection.astro";
 import FeaturesSection from "../sections/FeaturesSection.astro";
 import CodeExamplesSection from "../sections/CodeExamplesSection.astro";
 import CtaSection from "../sections/CtaSection.astro";
+import CommunitySection from "../sections/CommunitySection.astro";
 ---
 
 <Layout
@@ -14,81 +15,7 @@ import CtaSection from "../sections/CtaSection.astro";
   <FeaturesSection />
   <CodeExamplesSection />
   <CtaSection />
-  <section class="community">
-    <h2>Join Our Community</h2>
-    <p>Connect with other developers and contributors</p>
-
-    <div class="community-links">
-      <a href="https://discord.gg/nSMaEXkMUz" class="community-link">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M18.59 5.89C17.18 5.31 14.73 5 12 5C9.27 5 6.82 5.31 5.41 5.89C5.06 6.16 4.73 6.46 4.44 6.78C2.2 9.19 1 12.07 1 15.11C1 18.15 2.2 21.03 4.44 23.44C4.73 23.76 5.06 24.06 5.41 24.33C6.82 24.91 9.27 25.22 12 25.22C14.73 25.22 17.18 24.91 18.59 24.33C18.94 24.06 19.27 23.76 19.56 23.44C21.8 21.03 23 18.15 23 15.11C23 12.07 21.8 9.19 19.56 6.78C19.27 6.46 18.94 6.16 18.59 5.89Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-          <path
-            d="M7.5 17C8.6 17 9.5 16.1 9.5 15C9.5 13.9 8.6 13 7.5 13C6.4 13 5.5 13.9 5.5 15C5.5 16.1 6.4 17 7.5 17Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-          <path
-            d="M16.5 17C17.6 17 18.5 16.1 18.5 15C18.5 13.9 17.6 13 16.5 13C15.4 13 14.5 13.9 14.5 15C14.5 16.1 15.4 17 16.5 17Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </svg>
-        Discord
-      </a>
-
-      <a href="https://twitter.com/m__mdy__m" class="community-link">
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M23 3.01C22.0424 3.68549 20.9821 4.20217 19.86 4.54C19.2577 3.84751 18.4573 3.35669 17.567 3.13393C16.6767 2.91116 15.7395 2.9672 14.8821 3.29448C14.0247 3.62175 13.2884 4.2044 12.773 4.96373C12.2575 5.72307 11.9877 6.62234 12 7.54V8.54C10.2426 8.58558 8.50127 8.19586 6.93101 7.40545C5.36074 6.61503 4.01032 5.44864 3 4.01C3 4.01 -1 13 8 17C5.94053 18.398 3.48716 19.0989 1 19C10 24 21 19 21 7.5C20.9991 7.22145 20.9723 6.94358 20.92 6.67C21.9406 5.66348 22.6608 4.39271 23 3.01Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </svg>
-        Twitter
-      </a>
-
-      <a
-        href="https://github.com/orgs/glandjs/discussions"
-        class="community-link"
-      >
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </svg>
-        Discussions
-      </a>
-    </div>
-  </section>
+  <CommunitySection />
 </Layout>
 
 <script>
