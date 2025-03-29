@@ -1,6 +1,10 @@
+---
+import NavGroup from "@components/docs/NavGroup.astro";
+---
+
 <aside class="docs-sidebar">
   <nav class="docs-nav">
-    <div class="nav-group">
+    <NavGroup>
       <h3 class="nav-group-title">Getting Started</h3>
       <ul class="nav-items">
         <li class="nav-item active">
@@ -22,9 +26,9 @@
           </a>
         </li>
       </ul>
-    </div>
+    </NavGroup>
 
-    <div class="nav-group">
+    <NavGroup>
       <h3 class="nav-group-title">Core Concepts</h3>
       <ul class="nav-items">
         <li class="nav-item">
@@ -46,9 +50,9 @@
           </a>
         </li>
       </ul>
-    </div>
+    </NavGroup>
 
-    <div class="nav-group">
+    <NavGroup>
       <h3 class="nav-group-title">Advanced Guides</h3>
       <ul class="nav-items">
         <li class="nav-item">
@@ -70,6 +74,6 @@
           </a>
         </li>
       </ul>
-    </div>
+    </NavGroup>
   </nav>
 </aside>
