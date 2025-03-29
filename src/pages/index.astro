@@ -1,8 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import Feature from "../components/FeatureCard.astro";
 import CodeBlock from "../components/CodeBlock.astro";
 import HeroSection from "../sections/HeroSection.astro";
+import FeaturesSection from "../sections/FeaturesSection.astro";
 ---
 
 <Layout
@@ -11,47 +11,7 @@ import HeroSection from "../sections/HeroSection.astro";
 >
   <HeroSection />
 
-  <section class="features">
-    <div class="features-intro">
-      <h2>Why Choose Gland?</h2>
-      <p>
-        A modern event-driven framework for scalable and modular applications.
-      </p>
-    </div>
-
-    <div class="features-grid">
-      <Feature
-        title="Event-Driven Core"
-        icon="⚡"
-        description="Everything in Gland is centered around events, making it easy to build decoupled systems. The event-driven architecture ensures seamless communication between modules."
-      />
-      <Feature
-        title="Minimal Dependencies"
-        icon="🛠️"
-        description="Gland is designed with minimal dependencies, making it lightweight and easy to integrate into your existing stack without unnecessary overhead."
-      />
-      <Feature
-        title="Modular and Scalable"
-        icon="🧩"
-        description="The modular design of Gland allows you to easily scale and extend the framework, adding or removing features as needed. It’s perfect for building large-scale applications."
-      />
-      <Feature
-        title="Broker-Based Communication"
-        icon="🔗"
-        description="Gland allows you to create brokers for managing communication between different parts of your application, enabling flexibility and easy management of event flow."
-      />
-      <Feature
-        title="Protocol-Agnostic (Alpha Version)"
-        icon="🔌"
-        description="While the alpha version focuses on HTTP, Gland is built to be protocol-agnostic, allowing you to extend it to work with WebSockets, gRPC, and more in future versions."
-      />
-      <Feature
-        title="Lightweight Design"
-        icon="🌱"
-        description="Gland is designed to be lightweight and efficient, reducing unnecessary complexity and focusing on the core essentials for building scalable applications."
-      />
-    </div>
-  </section>
+  <FeaturesSection />
 
   <section class="code-examples">
     <div class="section-header">
