@@ -12,7 +12,7 @@ const {
   description = "Event-Driven Framework for Modern JavaScript",
 } = Astro.props;
 
-import "public/styles.css";
+import "public/global.css";
 ---
 
 <!doctype html>
@@ -22,15 +22,12 @@ import "public/styles.css";
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <!-- <link rel="stylesheet" href="/docs/styles.css" /> -->
   </head>
   <body>
     <Header />
-
     <main>
       <slot />
     </main>
-
     <Footer />
   </body>
 </html>

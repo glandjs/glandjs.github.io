@@ -8,8 +8,21 @@ export interface Props {
 const { title, icon, description } = Astro.props;
 ---
 
-<div class="feature">
-  <div class="feature-icon">{icon}</div>
-  <h3 class="feature-title">{title}</h3>
-  <p class="feature-description">{description}</p>
+<div class="group relative bg-background-secondary border border-border rounded-xl p-6 transition-all hover:-translate-y-1 hover:border-primary/30 hover:shadow-feature dark:hover:shadow-feature-dark">
+  <div class="absolute inset-0 rounded-xl bg-[radial-gradient(200px_circle_at_var(--x)_var(--y),rgba(100,108,255,0.1)] opacity-0 group-hover:opacity-100"
+       style="--x: 50%; --y: 30%" />
+
+  <div class="relative">
+    <div class="mb-4 text-2xl text-primary bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-3 rounded-lg w-max shadow-inner">
+      {icon}
+    </div>
+
+    <h3 class="text-lg font-semibold text-text-primary mb-2 bg-gradient-to-b from-primary/80 to-primary bg-clip-text text-transparent">
+      {title}
+    </h3>
+
+    <p class="text-text-secondary/80 text-sm leading-relaxed">
+      {description}
+    </p>
+  </div>
 </div>

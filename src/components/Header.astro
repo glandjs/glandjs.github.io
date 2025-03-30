@@ -8,52 +8,38 @@ const navItems = [
 ---
 
 <header class="header">
-  <div class="container">
-    <a href="/docs" class="logo" aria-label="Gland homepage">
-      <span class="logo-text">Gland</span>
+  <div class="container flex items-center justify-between h-16">
+    <a href={navItems[0].href} class="flex items-center gap-2 font-semibold">
+      <span class="bg-gradient-to-r from-[#646cff] to-[#bc52ee] bg-clip-text text-transparent">
+        Gland
+      </span>
       <span class="logo-badge">ALPHA</span>
     </a>
 
-    <button
-      class="mobile-menu-button"
-      id="mobile-menu-button"
-      aria-label="Toggle menu"
-      aria-expanded="false"
-    >
+     <button class="mobile-menu-button md:hidden">
       <span class="menu-icon"></span>
     </button>
 
-    <nav class="nav" id="main-nav">
-      <ul class="nav-list">
-        {
-          navItems.map((item) => (
-            <li class="nav-item">
-              <a
-                href={item.href}
-                class="nav-link"
-                {...(item.external
-                  ? { target: "_blank", rel: "noopener noreferrer" }
-                  : {})}
-              >
-                {item.name}
-                {item.external && (
-                  <span class="external-icon" aria-hidden="true">
-                    ↗
-                  </span>
-                )}
-              </a>
-            </li>
-          ))
-        }
+    <nav class="hidden md:flex items-center gap-6">
+      <ul class="flex items-center gap-4">
+        {navItems.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class="nav-link"
+              {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              {item.name}
+              {item.external && (
+                <span class="text-xs opacity-70" aria-hidden="true">↗</span>
+              )}
+            </a>
+          </li>
+        ))}
       </ul>
 
-      <div class="theme-toggle">
-        <button
-          id="theme-switcher"
-          aria-label="Toggle theme"
-          class="theme-button"
-        >
-          <span class="sun-icon">
+         <button class="theme-button">
+           <span class="sun-icon block dark:hidden">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" class="sun-circle"
               ></path>
@@ -64,7 +50,7 @@ const navItems = [
                 stroke-linecap="round"></path>
             </svg>
           </span>
-          <span class="moon-icon">
+          <span class="moon-icon hidden dark:block">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
               <path
                 d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
@@ -74,7 +60,6 @@ const navItems = [
             </svg>
           </span>
         </button>
-      </div>
     </nav>
   </div>
 </header>
