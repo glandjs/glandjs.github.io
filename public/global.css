@@ -2334,11 +2334,6 @@ body {
   color: rgb(var(--primary) / var(--tw-text-opacity, 1));
 }
 
-.text-purple-400 {
-  --tw-text-opacity: 1;
-  color: rgb(192 132 252 / var(--tw-text-opacity, 1));
-}
-
 .text-text-primary {
   --tw-text-opacity: 1;
   color: rgb(var(--text-primary) / var(--tw-text-opacity, 1));
@@ -2599,11 +2594,6 @@ body {
 .group:hover .group-hover\:text-primary {
   --tw-text-opacity: 1;
   color: rgb(var(--primary) / var(--tw-text-opacity, 1));
-}
-
-.group:hover .group-hover\:text-purple-300 {
-  --tw-text-opacity: 1;
-  color: rgb(216 180 254 / var(--tw-text-opacity, 1));
 }
 
 .group:hover .group-hover\:text-text-primary {
