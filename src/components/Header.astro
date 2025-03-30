@@ -10,19 +10,28 @@ const navItems = [
 <header class="header">
   <div class="container flex items-center justify-between h-16">
     <a href={navItems[0].href} class="flex items-center gap-2 font-semibold">
-      <span class="bg-gradient-to-r from-[#646cff] to-[#bc52ee] bg-clip-text text-transparent">
+       <span class="bg-gradient-to-r from-[#646cff] to-[#bc52ee] bg-clip-text text-transparent">
         Gland
       </span>
       <span class="logo-badge">ALPHA</span>
     </a>
+     <button
+        class="mobile-menu-button md:hidden p-2 group rounded-lg transition-all hover:bg-background-tertiary focus:outline-none focus:ring-2 focus:ring-primary/50"
+        aria-label="Toggle navigation menu"
+      >
+        <div class="relative w-8 h-8 flex items-center justify-center">
+          <div class="flex flex-col gap-1.5 w-6 transform transition-all duration-300 group-[.active]:-rotate-45">
+            <span class="block h-0.5 w-full bg-text-primary rounded-full origin-left transform transition-all duration-300 group-[.active]:translate-y-[5.5px] group-[.active]:rotate-90"></span>
+            <span class="block h-0.5 w-full bg-text-primary rounded-full transform transition-all duration-300 group-[.active]:opacity-0"></span>
+            <span class="block h-0.5 w-3/4 ml-auto bg-text-primary rounded-full origin-left transform transition-all duration-300 group-[.active]:-translate-y-[5.5px] group-[.active]:-rotate-90"></span>
+          </div>
+          <div class="absolute inset-0 rounded-full bg-primary/0 transition-all duration-300 group-hover:bg-primary/10 group-focus:bg-primary/10"></div>
+        </div>
+      </button>
 
-     <button class="mobile-menu-button md:hidden">
-      <span class="menu-icon"></span>
-    </button>
-
-    <nav class="hidden md:flex items-center gap-6">
-      <ul class="flex items-center gap-4">
-        {navItems.map((item) => (
+    <nav class="main-nav md:flex items-center gap-6">
+      <ul class="flex flex-col md:flex-row items-center gap-4">
+         {navItems.map((item) => (
           <li>
             <a
               href={item.href}
@@ -37,29 +46,46 @@ const navItems = [
           </li>
         ))}
       </ul>
-
-         <button class="theme-button">
-           <span class="sun-icon block dark:hidden">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" class="sun-circle"
-              ></path>
-              <path
-                d="M12 3v1m0 16v1m-9-9h1m16 0h1m-2.636-6.364l-.707.707M6.343 17.657l-.707.707M16.364 6.364l-.707-.707M6.343 6.343l-.707-.707"
-                class="sun-rays"
-                stroke-width="2"
-                stroke-linecap="round"></path>
-            </svg>
-          </span>
-          <span class="moon-icon hidden dark:block">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"
-                class="moon-body"
-                stroke-width="2"
-                stroke-linecap="round"></path>
-            </svg>
-          </span>
-        </button>
     </nav>
   </div>
 </header>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const mobileMenuButton = document.querySelector('.mobile-menu-button');
+    const mainNav = document.querySelector('.main-nav');
+    const navLinks = document.querySelectorAll('.nav-link');
+    const closeMenu = () => {
+      mobileMenuButton.classList.remove('active');
+      mainNav.classList.remove('active');
+      document.body.classList.remove('overflow-hidden');
+    };
+    mainNav.addEventListener('click', (e) => {
+             closeMenu();
+    });
+    mobileMenuButton.addEventListener('click', () => {
+      mobileMenuButton.classList.toggle('active');
+      mainNav.classList.toggle('active');
+      document.body.classList.toggle('overflow-hidden');
+    });
+
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth < 768) {
+         closeMenu()
+        }
+      });
+    });
+    if (localStorage.getItem('theme') === 'dark' ||
+        (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) {
+        closeMenu()
+      }
+    });
+  });
+</script>
