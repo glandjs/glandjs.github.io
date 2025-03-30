@@ -1,89 +1,45 @@
 # Gland Framework Documentation
 
-Welcome to the official documentation for **Gland Framework**, a lightweight and extensible web framework designed for modern JavaScript and TypeScript applications. Gland is built on an event-driven architecture (EDA), offering unmatched flexibility for creating modular, scalable, and maintainable server-side applications.
+Welcome to the official documentation repository for Gland Framework. This site is your central resource for learning about Gland’s core concepts, architecture, and advanced topics—all designed to help you build scalable, modular, event-driven applications with ease.
 
----
+> **Note:** This documentation is a work in progress. The site structure is still evolving, and we appreciate your feedback to improve its content and usability.
 
-## Overview
+## Documentation Site
 
-Gland Framework is a revolutionary approach to web application development. Unlike traditional frameworks that rely on tightly coupled services and direct dependencies, Gland treats everything as an event, promoting an architecture where components are decoupled and interactions occur asynchronously. This design enables seamless scalability, making it easy to extend and maintain your applications.
-
-With Gland, you can begin by handling HTTP requests, and as your application grows, you can effortlessly add WebSockets, RPC, or any other communication protocol simply by adding new event listeners. Its modular and protocol-agnostic structure allows you to adapt to various use cases without being locked into any particular system.
-
----
-
-## Key Features
-
-- **Event-Driven Architecture (EDA):** All interactions in Gland are event-driven, enabling components to communicate asynchronously. This reduces tight dependencies and enhances scalability.
-- **Modular System:** Build applications in a modular fashion by combining independent modules, each responsible for specific functionalities such as routing, database access, or external integrations.
-- **Protocol-Agnostic:** Gland does not bind itself to any particular protocol. You can start with HTTP and later switch to or add WebSockets, RPC, and other protocols without major changes to your application.
-- **Minimalistic Dependency Injection (DI):** Gland features a lightweight DI system that helps manage dependencies without creating complex and tight relationships between components.
-
----
-
-## Example
-
-Here's an example of how to use Gland to create a simple HTTP-based application. This demonstrates how controllers emit events that are processed asynchronously by event listeners.
-
-```typescript
-import { Controller, Get, Module } from '@glandjs/common'
-import { HttpContext } from '@glandjs/http'
-import { GlandFactory } from '@glandjs/core'
-
-@Controller('users')
-class UserController {
-  @Get('/')
-  createUser(ctx: HttpContext) {
-    const data = { id: 1, name: 'John Doe' }
-    ctx.emit('user:created', { data, ctx })
-  }
-}
-
-@Module({
-  controllers: [UserController],
-})
-class AppModule {}
-
-async function bootstrap() {
-  const app = await GlandFactory.create(AppModule)
-  app.listen(3000)
-}
-bootstrap()
-```
-
-### How It Works:
-
-1. **Controller**: `UserController` receives an HTTP request and emits the event `user:created`.
-2. **Event Handling**: The event is captured by an event listener, which processes the event asynchronously.
-3. **Response**: After processing, the system sends the HTTP response back to the client.
-
----
+Access the latest version of the documentation at:
+[https://glandjs.github.io/docs/](https://glandjs.github.io/docs/)
 
 ## Contributing
 
-We welcome contributions from the community! Whether you are fixing bugs, adding features, or improving documentation, your help is invaluable.
+We welcome contributions to the Gland documentation! If you find an issue, typo, or have a suggestion to improve the documentation, please follow these steps:
 
-### Steps to Contribute:
+1. **Fork the repository** and clone it to your local machine.
+2. **Create a new branch** for your changes.
+3. **Commit your changes** with clear and concise messages.
+4. **Open a pull request (PR)** with a description of the changes and reference any related issues.
 
-1. Fork the repository
-2. Create a new branch for your feature or bug fix
-3. Implement your changes and write tests if needed
-4. Open a pull request to merge your changes
+For more details on how to contribute, please refer to our [Contributing Guide](./docs/CONTRIBUTING.md).
 
-We encourage contributors to follow best practices and ensure that their code adheres to the existing coding style and conventions used in Gland.
+## Reporting Issues
 
----
+If you find a bug or an issue with the documentation, please open an issue on the [GitHub issues page](https://github.com/glandjs/gland/issues). When reporting an issue, make sure to provide as much detail as possible to help us quickly address it. You can use our issue templates for consistency and completeness:
+
+- [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml)
+- [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml)
+- [Documentation Issue](.github/ISSUE_TEMPLATE/documentation_improvement.yml)
+
+## Code of Conduct
+
+We expect all contributors to follow our [Code of Conduct](./docs/CODE_OF_CONDUCT.md). Please treat everyone with respect and kindness, and help maintain a welcoming and professional environment for all.
+
+## Community
+
+Join our community to discuss Gland, ask questions, and share your ideas:
+
+- **Discord:** [Join the Gland Community](https://discord.gg/nSMaEXkMUz)
+- **GitHub Issues:** [Report an Issue](https://github.com/glandjs/gland/issues)
+- **Stack Overflow:** Ask questions with the `gland` tag on [Stack Overflow](https://stackoverflow.com/questions/tagged/gland)
 
 ## License
 
-Gland is open-source and licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
----
-
-## Questions?
-
-For any questions or issues, feel free to:
-
-- Open an issue in the repository
-- Join the community discussions on the [Gland Discord Server](https://discord.gg/nSMaEXkMUz)
-- Visit the Gland documentation for additional guides and resources.
+Gland is licensed under the [MIT License](LICENSE).
