@@ -1,206 +1,154 @@
 ---
 import Layout from "@layouts/Layout.astro";
 import CodeBlock from "@components/CodeBlock.astro";
+import Sidebar from "@components/Sidebar.astro"
 ---
 
 <Layout
   title="Getting Started - Gland Framework"
   description="Start building with Gland's event-driven framework. Learn core concepts, setup your first project, and explore advanced features"
 >
-  <div class="flex min-h-[calc(100vh-160px)]">
-    {/* Sidebar Navigation */}
-    <aside class="sticky top-24 h-fit w-64 pr-6 border-r border-border hidden md:block">
-      <nav class="space-y-8">
-        {/* Getting Started Section */}
-        <div>
-          <h3 class="text-xs uppercase tracking-wider text-text-secondary mb-4 px-2">Getting Started</h3>
-          <ul class="space-y-1">
-            <li>
-              <a href="/docs/intro" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium">
-                <span class="text-lg">🚀</span>
-                Quick Start
-              </a>
-            </li>
-            <li>
-              <a href="/docs/installation" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">📦</span>
-                Installation
-              </a>
-            </li>
-            <li>
-              <a href="/docs/architecture" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">🏗️</span>
-                Architecture
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        {/* Core Concepts Section */}
-        <div>
-          <h3 class="text-xs uppercase tracking-wider text-text-secondary mb-4 px-2">Core Concepts</h3>
-          <ul class="space-y-1">
-            <li>
-              <a href="/docs/events" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">⚡</span>
-                Event System
-              </a>
-            </li>
-            <li>
-              <a href="/docs/di" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">🧩</span>
-                Dependency Injection
-              </a>
-            </li>
-            <li>
-              <a href="/docs/http" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">🌐</span>
-                HTTP Module
-              </a>
-            </li>
-          </ul>
-        </div>
-
-        {/* Advanced Guides Section */}
-        <div>
-          <h3 class="text-xs uppercase tracking-wider text-text-secondary mb-4 px-2">Advanced Guides</h3>
-          <ul class="space-y-1">
-            <li>
-              <a href="/docs/middleware" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">🛠️</span>
-                Middleware
-              </a>
-            </li>
-            <li>
-              <a href="/docs/testing" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">🧪</span>
-                Testing
-              </a>
-            </li>
-            <li>
-              <a href="/docs/deployment" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
-                <span class="text-lg">🚢</span>
-                Deployment
-              </a>
-            </li>
-          </ul>
-        </div>
-      </nav>
-    </aside>
-
+  <div class="relative flex flex-col md:flex-row min-h-[calc(100vh-160px)]">
+     <Sidebar currentPath={Astro.url.pathname} />
     {/* Main Content */}
-    <main class="flex-1 max-w-3xl mx-auto px-4 md:px-8 py-8">
+    <main class="flex-1 max-w-3xl mx-auto px-4 md:px-8 py-8 w-full overflow-hidden">
       {/* Page Header */}
-      <header class="mb-12">
-        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent mb-4">
-          Getting Started
+      <header class="mb-12 animate-fade-in-up">
+        <div class="inline-block mb-4">
+          <span class="text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-full tracking-wide">
+            Early Access
+          </span>
+        </div>
+        <h1 class="text-4xl font-bold text-text-primary mb-4 leading-tight">
+          Event-Driven Architecture<br>
+          <span class="bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+            Simplified
+          </span>
         </h1>
-        <p class="text-xl text-text-secondary/90">
-          Build event-driven applications faster than ever with Gland's intuitive API and powerful architecture
+        <p class="text-xl text-text-secondary/90 max-w-2xl leading-relaxed">
+          Gland is a next-generation framework engineered for building distributed systems
+          with type-safe event handling, modular design patterns, and enterprise-grade scalability.
         </p>
       </header>
 
-      {/* Why Gland Section */}
-      <section class="mb-16">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">🎯</div>
-          <h2 class="text-3xl font-semibold text-text-primary">Why Choose Gland?</h2>
-        </div>
-
-        <div class="prose prose-invert max-w-none">
-          <p class="text-lg text-text-secondary/90">
-            Gland revolutionizes backend development with its unique combination of features:
-          </p>
-          <ul class="space-y-3 text-text-secondary/90">
-            <li class="flex items-center gap-2">
-              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">⚡</div>
-              Real-time event handling out of the box
-            </li>
-            <li class="flex items-center gap-2">
-              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">🔗</div>
-              Protocol-agnostic communication
-            </li>
-            <li class="flex items-center gap-2">
-              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">🧩</div>
-              Modular architecture with DI support
-            </li>
-            <li class="flex items-center gap-2">
-              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">🚀</div>
-              Optimized for horizontal scaling
-            </li>
-          </ul>
-        </div>
-      </section>
-
       {/* Quick Start Section */}
-      <section class="mb-16">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">⚡</div>
-          <h2 class="text-3xl font-semibold text-text-primary">Quick Start</h2>
+      <section class="mb-16 animate-fade-in-up" style="animation-delay: 0.2s;">
+        <div class="flex items-center gap-4 mb-8">
+          <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">⚡</div>
+          <div>
+            <h2 class="text-3xl font-semibold text-text-primary mb-1">Quick Start</h2>
+            <p class="text-text-secondary">Get started in less than 5 minutes</p>
+          </div>
         </div>
 
-        <div class="space-y-12">
-          <div>
-            <h3 class="text-xl font-semibold text-text-primary mb-4">Prerequisites</h3>
-            <ul class="list-disc pl-6 text-text-secondary/90 space-y-2">
-              <li>Node.js 18+</li>
-              <li>npm 9+ or pnpm 7+</li>
-              <li>TypeScript 5+ (recommended)</li>
-            </ul>
+        <div class="space-y-8">
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <div>
+              <h3 class="text-xl font-semibold text-text-primary mb-2">Prerequisites</h3>
+              <ul class="list-disc pl-6 text-text-secondary/90 space-y-2">
+                <li>Node.js 18+</li>
+                <li>npm 9+ or pnpm 7+</li>
+                <li>TypeScript 5+ (recommended)</li>
+              </ul>
+            </div>
           </div>
 
-          <div>
-            <h3 class="text-xl font-semibold text-text-primary mb-4">Create New Project</h3>
-            <CodeBlock lang="bash">
-              mkdir my-app && cd my-app
-              npm init -y
-              npm install @gland/core @gland/http
-            </CodeBlock>
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <div>
+              <h3 class="text-xl font-semibold text-text-primary mb-4">Create New Project</h3>
+              <CodeBlock lang="bash" >
+                mkdir my-app && cd my-app
+npm init -y
+npm install @gland/core @gland/http
+              </CodeBlock>
+            </div>
           </div>
 
-          <div>
-            <h3 class="text-xl font-semibold text-text-primary mb-4">Basic Application</h3>
-            <CodeBlock lang="typescript" filename="src/app.ts" >
-              {`
-              import { GlandFactory } from '@gland/core';
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <div>
+              <h3 class="text-xl font-semibold text-text-primary mb-4">Basic Application</h3>
+              <CodeBlock lang="typescript" filename="src/app.ts">
+                {`
+                import { GlandFactory } from '@gland/core';
 
-              @Module({
-                imports: []
-              })
-              class AppModule {}
+                @Module({
+                  controller: []
+                })
+                class AppModule {}
 
-              const app = GlandFactory.create(AppModule);
-              app.listen(3000);
-              `}
-            </CodeBlock>
+                const app = GlandFactory.create(AppModule);
+                app.listen(3000);
+                `}
+              </CodeBlock>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Next Steps Section */}
-      <section class="mb-16">
-        <div class="flex items-center gap-3 mb-8">
-          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">🔗</div>
-          <h2 class="text-3xl font-semibold text-text-primary">Next Steps</h2>
+      <section class="animate-fade-in-up" style="animation-delay: 0.3s;">
+        <!-- Section Header -->
+        <div class="flex items-start gap-4 md:items-center mb-8 md:mb-12">
+          <div class="flex-shrink-0 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl">
+            <span class="text-primary">🔗</span>
+          </div>
+          <div>
+            <h2 class="text-2xl md:text-3xl font-semibold text-text-primary mb-1">Next Steps</h2>
+            <p class="text-base md:text-lg text-text-secondary/90">Continue your learning journey</p>
+          </div>
         </div>
 
-        <div class="grid md:grid-cols-2 gap-6">
-          <a href="/docs/architecture" class="group p-6 border border-border rounded-xl hover:border-primary/20 transition-all">
-            <h3 class="text-xl font-semibold text-text-primary mb-2 group-hover:text-primary">
-              Architecture Guide →
-            </h3>
-            <p class="text-text-secondary/90">
-              Understand Gland's event-driven architecture and core components
-            </p>
+        <!-- Cards Grid -->
+        <div class="grid gap-4 md:grid-cols-2 md:gap-6">
+          <!-- Card 1 -->
+          <a
+            href="/docs/architecture"
+            class="group relative bg-background-secondary/50 hover:bg-background-secondary border border-border rounded-xl p-6 transition-all hover:border-primary/20 hover:shadow-2xl"
+          >
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center text-xl">
+                  🏗️
+                </div>
+                <h3 class="text-lg md:text-xl font-semibold text-text-primary">Core Architecture</h3>
+              </div>
+              <p class="text-text-secondary/90 text-base leading-relaxed">
+                Understand the event-driven architecture fundamentals
+              </p>
+              <div class="inline-flex items-center gap-2 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="text-sm font-medium">Explore Guide</span>
+                <svg class="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </div>
+            </div>
           </a>
 
-          <a href="/docs/events" class="group p-6 border border-border rounded-xl hover:border-primary/20 transition-all">
-            <h3 class="text-xl font-semibold text-text-primary mb-2 group-hover:text-primary">
-              Event System →
-            </h3>
-            <p class="text-text-secondary/90">
-              Master event handling and cross-module communication
-            </p>
+          <!-- Card 2 -->
+          <a
+            href="/docs/events"
+            class="group relative bg-background-secondary/50 hover:bg-background-secondary border border-border rounded-xl p-6 transition-all hover:border-primary/20 hover:shadow-2xl"
+          >
+            <div class="space-y-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-primary/10 text-primary rounded-lg flex items-center justify-center text-xl">
+                  ⚡
+                </div>
+                <h3 class="text-lg md:text-xl font-semibold text-text-primary">Event System</h3>
+              </div>
+              <p class="text-text-secondary/90 text-base leading-relaxed">
+                Master event handling patterns and strategies
+              </p>
+              <div class="inline-flex items-center gap-2 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="text-sm font-medium">Learn Events</span>
+                <svg class="w-4 h-4 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+                </svg>
+              </div>
+            </div>
           </a>
         </div>
       </section>

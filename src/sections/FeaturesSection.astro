@@ -8,47 +8,49 @@ import FeatureCard from "@components/FeatureCard.astro";
     <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGZpbGw9IiMyMDIwMjAiIGQ9Ik0wIDBoNjB2NjBIMHoiLz48cGF0aCBkPSJNNTkuNSA1OS41VjU5LjVoLTU5di01OSIgc3Ryb2tlPSIjMzAzMDMwIiBzdHJva2Utd2lkdGg9IjEiLz48L2c+PC9zdmc+')] opacity-20"></div>
   </div> -->
 
- <div class="relative z-10 px-container">
-   <div class="max-w-3xl mx-auto text-center mb-16 space-y-4">
-      <h2 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
+<div class="relative z-10 px-container">
+    <!-- Title & Subtitle -->
+    <div class="max-w-3xl mx-auto text-center mb-16 space-y-4">
+      <h2 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
         Why Choose Gland?
       </h2>
-      <p class="text-lg text-text-secondary/90 md:text-xl">
-        A modern event-driven framework for scalable and modular applications
+      <p class="text-lg text-gray-300 md:text-xl">
+        A modern event-driven framework for scalable and modular applications.
       </p>
-   </div>
+    </div>
 
-  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
-    <FeatureCard
-      title="Event-Driven Core"
-      icon="⚡"
-      description="Everything in Gland is centered around events, making it easy to build decoupled systems. The event-driven architecture ensures seamless communication between modules."
-    />
-    <FeatureCard
-      title="Minimal Dependencies"
-      icon="🛠️"
-      description="Gland is designed with minimal dependencies, making it lightweight and easy to integrate into your existing stack without unnecessary overhead."
-    />
-    <FeatureCard
-      title="Modular and Scalable"
-      icon="🧩"
-      description="The modular design of Gland allows you to easily scale and extend the framework, adding or removing features as needed. It’s perfect for building large-scale applications."
-    />
-    <FeatureCard
-      title="Broker-Based Communication"
-      icon="🔗"
-      description="Gland allows you to create brokers for managing communication between different parts of your application, enabling flexibility and easy management of event flow."
-    />
-    <FeatureCard
-      title="Protocol-Agnostic (Alpha Version)"
-      icon="🔌"
-      description="While the alpha version focuses on HTTP, Gland is built to be protocol-agnostic, allowing you to extend it to work with WebSockets, gRPC, and more in future versions."
-    />
-    <FeatureCard
-      title="Lightweight Design"
-      icon="🌱"
-      description="Gland is designed to be lightweight and efficient, reducing unnecessary complexity and focusing on the core essentials for building scalable applications."
-    />
-  </div>
+    <!-- Features Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <FeatureCard
+        title="Event-Driven Core"
+        icon="⚡"
+        description="Gland is fully event-driven, making it easy to create decoupled and highly scalable applications."
+      />
+      <FeatureCard
+        title="Minimal Dependencies"
+        icon="🛠️"
+        description="Designed with minimal dependencies, ensuring lightweight and efficient integration into your stack."
+      />
+      <FeatureCard
+        title="Modular & Scalable"
+        icon="🧩"
+        description="Its modular architecture allows easy scalability, making it ideal for large applications."
+      />
+      <FeatureCard
+        title="Broker-Based Communication"
+        icon="🔗"
+        description="Enables flexible event management through broker-based communication between modules."
+      />
+      <FeatureCard
+        title="Protocol-Agnostic (Alpha)"
+        icon="🔌"
+        description="Currently supporting HTTP, but designed to be extended for WebSockets, gRPC, and more."
+      />
+      <FeatureCard
+        title="Lightweight & Efficient"
+        icon="🌱"
+        description="Focused on performance, reducing unnecessary complexity while keeping flexibility intact."
+      />
+    </div>
  </div>
 </section>
