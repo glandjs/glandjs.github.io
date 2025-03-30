@@ -1,118 +1,66 @@
-# Contributing to Gland Website
+# Contributing to Gland
 
-Thank you for your interest in contributing to the Gland website! We welcome contributions from everyone in the community. This document outlines how you can contribute and what to expect when interacting with the project.
+Thank you for your interest in contributing to Gland! We welcome contributions of all kinds, whether it's reporting a bug, proposing a feature, or submitting a pull request (PR). Please read the following guidelines to ensure a smooth process.
 
-## Table of Contents
+## 📝 How to Contribute
 
-- [Contributing to Gland Website](#contributing-to-gland-website)
-  - [Table of Contents](#table-of-contents)
-  - [Getting Started](#getting-started)
-    - [Installation](#installation)
-    - [Development Server](#development-server)
-  - [Making Contributions](#making-contributions)
-    - [Reporting Bugs](#reporting-bugs)
-    - [Suggesting Enhancements](#suggesting-enhancements)
-    - [Code Contributions](#code-contributions)
-    - [Commit Messages](#commit-messages)
-  - [Pull Request Process](#pull-request-process)
+### 1. Reporting Issues
 
-## Getting Started
+If you encounter a bug or an issue with the documentation, please follow these steps:
 
-### Installation
+- **Search for existing issues:** Before reporting a new issue, please check if the issue has already been reported. You can search the [issue tracker](https://github.com/glandjs/gland/issues).
+- **Create a new issue:** If you couldn't find a similar issue, please create a new one. When opening a new issue, use the appropriate template (`bug_report.yml`, `feature_request.yml`, or `documentation.yml`) to provide the necessary details. The more information you provide, the easier it will be for us to fix the issue.
 
-1. Fork the repository
-2. Clone your fork locally:
+### 2. Pull Requests
 
-   ```bash
-   git clone https://github.com/glandjs/docs.git
-   cd docs
-   ```
+If you're submitting a pull request (PR) to fix a bug or add a feature, please ensure that you:
 
-3. Install dependencies:
-   ```bash
-   pnpm install
-   ```
+- **Follow the semantic commit convention**: Use the following commit message format for your changes:
 
-### Development Server
+  - **fix:** for bug fixes
+  - **feat:** for new features
+  - **docs:** for documentation changes
+  - **style:** for formatting changes (e.g., indentation, semi-colons, etc.)
+  - **refactor:** for code refactors that do not change functionality
+  - **test:** for adding or modifying tests
+  - **chore:** for routine maintenance (e.g., dependency updates)
 
-To start the development server:
+  Example: `feat: add support for custom event handlers`
 
-```bash
-pnpm dev
-```
+- **Write clear commit messages:** Each commit should represent a logical unit of work. Provide a concise explanation of what the commit does.
 
-The site will be available at `http://localhost:3000`.
+- **Ensure the code works:** Before submitting a PR, run tests and ensure that everything works as expected.
 
-## Making Contributions
+- **Link to the issue:** If your PR addresses an existing issue, mention it in the PR description (e.g., `Closes #123`).
 
-### Reporting Bugs
+- **Create a descriptive PR title and description:** Be clear about the changes you made and how they address the issue at hand.
 
-1. Check if the bug has already been reported in [GitHub Issues](https://github.com/glandjs/docs/issues)
-2. If not, open a new issue with:
-   - A clear, descriptive title
-   - Steps to reproduce
-   - Expected vs. actual behavior
-   - Screenshots if applicable
-   - Browser/OS version if relevant
+### 3. Discussion & Feature Requests
 
-### Suggesting Enhancements
+If you have an idea for a new feature or an enhancement, we encourage you to discuss it first. Open a new issue or post your idea in our community.
 
-1. Search existing issues to avoid duplicates
-2. Open a new issue with:
-   - A clear description of the enhancement
-   - Use cases and benefits
-   - Any relevant examples from other projects
+- **Community discussions:** For general discussions or feature suggestions, please use our [Discord community](https://discord.gg/nSMaEXkMUz).
+- **Feature requests:** If you're requesting a new feature, please provide context on how it will improve the project and why it's needed.
 
-### Code Contributions
+### 4. Code of Conduct
 
-1. Create a new branch from `main`:
-   ```bash
-   git checkout -b feat/your-feature-name
-   # or
-   git checkout -b fix/issue-number
-   ```
-2. Test your changes thoroughly
-3. Push to your fork and open a Pull Request
+Please make sure to review and follow our [Code of Conduct](CODE_OF_CONDUCT.md). This helps maintain a positive and respectful environment for everyone involved.
 
-### Commit Messages
+---
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
+## 🎯 Guidelines for Contributors
 
-```
-<type>[optional scope]: <description>
+- **Be respectful:** Treat others with respect and kindness. Avoid any behavior that may be harmful or disruptive.
+- **Be patient:** We are all volunteers, and it might take some time to review or merge your contribution.
+- **Follow the project's structure:** Adhere to the project's file and directory structure when submitting code.
+- **Test your changes:** Make sure your code passes existing tests and add new tests for any new functionality.
 
-[optional body]
+Thank you for contributing to Gland! We appreciate your help in making this framework better for everyone.
 
-[optional footer]
-```
+---
 
-Common types:
+## 📢 Community Links
 
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style/formatting
-- `refactor`: Code change that neither fixes nor adds a feature
-- `perf`: Performance improvement
-- `test`: Adding or modifying tests
-- `chore`: Maintenance tasks
-
-Example:
-
-```
-feat(components): add new CodeBlock component
-
-Adds a reusable CodeBlock component with syntax highlighting and copy functionality
-
-Closes #123
-```
-
-## Pull Request Process
-
-1. Ensure your branch is up-to-date with `main`
-2. Run all tests and verify your changes work as expected
-3. Open a PR with a clear title and description
-4. Reference any related issues
-5. Include screenshots for UI changes
-6. Our team will review your PR and may request changes
-7. Once approved, your PR will be merged
+- **Discord:** Join our [Discord server](https://discord.gg/nSMaEXkMUz) to chat with the community, ask questions, and participate in discussions.
+- **GitHub Issues:** [Submit an issue](https://github.com/glandjs/gland/issues) if you find a bug or need help.
+- **Stack Overflow:** Tag your questions with [gland](https://stackoverflow.com/questions/tagged/gland) for help.
