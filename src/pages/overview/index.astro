@@ -1,10 +1,5 @@
 ---
 import Layout from "@layouts/Layout.astro";
-import DocsWrapper from "@components/docs/DocsWrapper.astro";
-import DocsSidebar from "@components/docs/DocsSidebar.astro";
-import DocsContentWrapper from "@components/docs/DocsContentWrapper.astro";
-import DocsSection from "@components/docs/DocsSection.astro";
-import DocsHeader from "@components/docs/DocsHeader.astro";
 import CodeBlock from "@components/CodeBlock.astro";
 ---
 
@@ -12,109 +7,203 @@ import CodeBlock from "@components/CodeBlock.astro";
   title="Getting Started - Gland Framework"
   description="Start building with Gland's event-driven framework. Learn core concepts, setup your first project, and explore advanced features"
 >
-  <DocsWrapper>
-    <DocsSidebar />
+  <div class="flex min-h-[calc(100vh-160px)]">
+    {/* Sidebar Navigation */}
+    <aside class="sticky top-24 h-fit w-64 pr-6 border-r border-border hidden md:block">
+      <nav class="space-y-8">
+        {/* Getting Started Section */}
+        <div>
+          <h3 class="text-xs uppercase tracking-wider text-text-secondary mb-4 px-2">Getting Started</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="/docs/intro" class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary font-medium">
+                <span class="text-lg">🚀</span>
+                Quick Start
+              </a>
+            </li>
+            <li>
+              <a href="/docs/installation" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">📦</span>
+                Installation
+              </a>
+            </li>
+            <li>
+              <a href="/docs/architecture" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">🏗️</span>
+                Architecture
+              </a>
+            </li>
+          </ul>
+        </div>
 
-    <DocsContentWrapper>
-      <DocsHeader title="Getting Started with Gland">
-        <p class="lead">Start building event-driven applications in minutes</p>
-      </DocsHeader>
+        {/* Core Concepts Section */}
+        <div>
+          <h3 class="text-xs uppercase tracking-wider text-text-secondary mb-4 px-2">Core Concepts</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="/docs/events" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">⚡</span>
+                Event System
+              </a>
+            </li>
+            <li>
+              <a href="/docs/di" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">🧩</span>
+                Dependency Injection
+              </a>
+            </li>
+            <li>
+              <a href="/docs/http" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">🌐</span>
+                HTTP Module
+              </a>
+            </li>
+          </ul>
+        </div>
 
-      <DocsSection>
-        <h2 class="section-title">
-          <span class="title-icon">🎯</span>
-          Why Gland?
-        </h2>
+        {/* Advanced Guides Section */}
+        <div>
+          <h3 class="text-xs uppercase tracking-wider text-text-secondary mb-4 px-2">Advanced Guides</h3>
+          <ul class="space-y-1">
+            <li>
+              <a href="/docs/middleware" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">🛠️</span>
+                Middleware
+              </a>
+            </li>
+            <li>
+              <a href="/docs/testing" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">🧪</span>
+                Testing
+              </a>
+            </li>
+            <li>
+              <a href="/docs/deployment" class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-background-tertiary text-text-secondary hover:text-text-primary transition-colors">
+                <span class="text-lg">🚢</span>
+                Deployment
+              </a>
+            </li>
+          </ul>
+        </div>
+      </nav>
+    </aside>
 
-        <div class="prose">
-          <p>
-            Gland reimagines server-side development with its unique event-first
-            architecture:
+    {/* Main Content */}
+    <main class="flex-1 max-w-3xl mx-auto px-4 md:px-8 py-8">
+      {/* Page Header */}
+      <header class="mb-12">
+        <h1 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent mb-4">
+          Getting Started
+        </h1>
+        <p class="text-xl text-text-secondary/90">
+          Build event-driven applications faster than ever with Gland's intuitive API and powerful architecture
+        </p>
+      </header>
+
+      {/* Why Gland Section */}
+      <section class="mb-16">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">🎯</div>
+          <h2 class="text-3xl font-semibold text-text-primary">Why Choose Gland?</h2>
+        </div>
+
+        <div class="prose prose-invert max-w-none">
+          <p class="text-lg text-text-secondary/90">
+            Gland revolutionizes backend development with its unique combination of features:
           </p>
-          <ul class="feature-list">
-            <li>⚡️ Built for real-time applications</li>
-            <li>🔗 Protocol-agnostic design</li>
-            <li>🧩 Modular and extensible</li>
-            <li>🚀 Optimized for scale</li>
+          <ul class="space-y-3 text-text-secondary/90">
+            <li class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">⚡</div>
+              Real-time event handling out of the box
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">🔗</div>
+              Protocol-agnostic communication
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">🧩</div>
+              Modular architecture with DI support
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-6 h-6 bg-primary/10 text-primary rounded flex items-center justify-center">🚀</div>
+              Optimized for horizontal scaling
+            </li>
           </ul>
         </div>
-      </DocsSection>
+      </section>
 
-      <DocsSection>
-        <h2 class="section-title">
-          <span class="title-icon">⚡</span>
-          Quick Start
-        </h2>
-
-        <div class="prose">
-          <h3>Prerequisites</h3>
-          <ul>
-            <li>Node.js 18+</li>
-            <li>npm 9+ or pnpm</li>
-            <li>TypeScript 5+ (recommended)</li>
-          </ul>
-
-          <h3>Create a New Project</h3>
-          <CodeBlock lang="bash">
-            {
-              `
-            # Create new directory
-            mkdir my-gland-app
-            cd my-gland-app
-
-            # Initialize project
-            npm init -y
-
-            # Install dependencies
-            npm install @gland/core
-            `
-            }
-          </CodeBlock>
-
-          <h3>First Application</h3>
-          <CodeBlock lang="typescript" filename="src/app.ts" lineNumbers>
-            {
-              `
-            import { GlandFactory } from '@gland/core';
-            import { UserController, UserChannel } from './users';
-
-            @Module({
-              controllers: [UserController],
-              channels: [UserChannel]
-            })
-            class AppModule {}
-            // Bootstrap application
-            const app = GlandFactory.create(AppModule);
-            app.listen(3000);
-            `
-            }
-          </CodeBlock>
+      {/* Quick Start Section */}
+      <section class="mb-16">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">⚡</div>
+          <h2 class="text-3xl font-semibold text-text-primary">Quick Start</h2>
         </div>
-      </DocsSection>
 
-      <DocsSection>
-        <h2 class="section-title">
-          <span class="title-icon">🔗</span>
-          Next Steps
-        </h2>
+        <div class="space-y-12">
+          <div>
+            <h3 class="text-xl font-semibold text-text-primary mb-4">Prerequisites</h3>
+            <ul class="list-disc pl-6 text-text-secondary/90 space-y-2">
+              <li>Node.js 18+</li>
+              <li>npm 9+ or pnpm 7+</li>
+              <li>TypeScript 5+ (recommended)</li>
+            </ul>
+          </div>
 
-        <div class="next-steps">
-          <a href="/docs/architecture" class="step-card">
-            <h3>Architecture Guide →</h3>
-            <p>Understand Gland's core architecture and event flow</p>
+          <div>
+            <h3 class="text-xl font-semibold text-text-primary mb-4">Create New Project</h3>
+            <CodeBlock lang="bash">
+              mkdir my-app && cd my-app
+              npm init -y
+              npm install @gland/core @gland/http
+            </CodeBlock>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-semibold text-text-primary mb-4">Basic Application</h3>
+            <CodeBlock lang="typescript" filename="src/app.ts" >
+              {`
+              import { GlandFactory } from '@gland/core';
+
+              @Module({
+                imports: []
+              })
+              class AppModule {}
+
+              const app = GlandFactory.create(AppModule);
+              app.listen(3000);
+              `}
+            </CodeBlock>
+          </div>
+        </div>
+      </section>
+
+      {/* Next Steps Section */}
+      <section class="mb-16">
+        <div class="flex items-center gap-3 mb-8">
+          <div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-2xl">🔗</div>
+          <h2 class="text-3xl font-semibold text-text-primary">Next Steps</h2>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+          <a href="/docs/architecture" class="group p-6 border border-border rounded-xl hover:border-primary/20 transition-all">
+            <h3 class="text-xl font-semibold text-text-primary mb-2 group-hover:text-primary">
+              Architecture Guide →
+            </h3>
+            <p class="text-text-secondary/90">
+              Understand Gland's event-driven architecture and core components
+            </p>
           </a>
 
-          <a href="/docs/events" class="step-card">
-            <h3>Event System →</h3>
-            <p>Master event handling and cross-channel communication</p>
-          </a>
-
-          <a href="/examples" class="step-card">
-            <h3>Examples →</h3>
-            <p>Explore real-world use cases and code samples</p>
+          <a href="/docs/events" class="group p-6 border border-border rounded-xl hover:border-primary/20 transition-all">
+            <h3 class="text-xl font-semibold text-text-primary mb-2 group-hover:text-primary">
+              Event System →
+            </h3>
+            <p class="text-text-secondary/90">
+              Master event handling and cross-module communication
+            </p>
           </a>
         </div>
-      </DocsSection>
-    </DocsContentWrapper>
-  </DocsWrapper>
+      </section>
+    </main>
+  </div>
 </Layout>

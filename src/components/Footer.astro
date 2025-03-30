@@ -56,17 +56,22 @@ const socialLinks = [
 ];
 ---
 
-<footer class="footer">
+<footer class="border-t border-header bg-background py-16">
   <div class="container">
-    <div class="grid">
-      <div class="brand-col">
-        <a href="/" class="logo" aria-label="Gland homepage">
-          <span class="logo-text">Gland</span>
-          <span class="logo-badge">ALPHA</span>
-        </a>
-        <p class="tagline">Event-Driven Framework for Modern JavaScript</p>
+    <div class="grid grid-cols-1 lg:grid-cols-footer gap-8 lg:gap-16 mb-12">
 
-        <div class="social-links">
+       {/* Brand Section */}
+       <div class="flex flex-col gap-4">
+        <div class="flex items-center gap-2">
+          <span class="bg-gradient-to-r from-[#646cff] to-[#bc52ee] bg-clip-text text-transparent font-semibold text-lg">
+            Gland
+          </span>
+          <span class="logo-badge">ALPHA</span>
+        </div>
+        <p class="text-text-secondary text-sm">
+          Event-Driven Framework for Modern JavaScript
+        </p>
+         <div class="flex gap-3 mt-2">
           {
             socialLinks.map((link) => (
               <a
@@ -108,24 +113,26 @@ const socialLinks = [
         </div>
       </div>
 
-      <div class="links-grid">
+      {/* Links Grid */}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-12">
         {
           footerLinks.map((section) => (
-            <div class="link-section">
-              <h3 class="section-title">{section.title}</h3>
-              <ul class="link-list">
+          <div class="flex flex-col gap-4">
+              <h3 class="text-text-primary font-semibold text-sm">
+              {section.title}
+              </h3>
+            <ul class="flex flex-col gap-3">
                 {section.links.map((link) => (
-                  <li class="link-item">
+                  <li >
                     <a
                       href={link.href}
-                      class="footer-link"
+                       class="footer-link"
                       {...(link.external
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
                     >
                       {link.name}
                       {link.external && (
-                        <span class="external-icon" aria-hidden="true">
                           <svg
                             width="12"
                             height="12"
@@ -139,7 +146,6 @@ const socialLinks = [
                               stroke-linecap="round"
                             />
                           </svg>
-                        </span>
                       )}
                     </a>
                   </li>
@@ -150,17 +156,17 @@ const socialLinks = [
         }
       </div>
     </div>
-
-    <div class="footer-bottom">
-      <p class="copyright">
+    {/* Bottom Section */}
+    <div class="border-t border-header pt-8 flex flex-col md:flex-row justify-between gap-4 text-center md:text-left">
+      <p class="text-text-secondary text-sm">
         © {new Date().getFullYear()} Gland Framework. All rights reserved.
       </p>
-      <div class="legal-links">
-        <a href="/license" class="legal-link">License</a>
-        <span class="divider">•</span>
-        <a href="/privacy" class="legal-link">Privacy Policy</a>
-        <span class="divider">•</span>
-        <a href="/terms" class="legal-link">Terms of Use</a>
+      <div class="flex flex-wrap justify-center gap-3 text-sm">
+        <a href="/license" class="footer-link">License</a>
+         <span class="text-text-secondary">•</span>
+        <a href="/privacy" class="footer-link">Privacy Policy</a>
+        <span class="text-text-secondary">•</span>
+        <a href="/terms" class="footer-link">Terms of Use</a>
       </div>
     </div>
   </div>

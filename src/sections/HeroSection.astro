@@ -2,84 +2,76 @@
 import CodeBlock from "@components/CodeBlock.astro";
 ---
 
-<!-- Hero section -->
-<section class="hero">
-  <div class="hero-content">
-    <div class="hero-badge">
-      <span class="badge">ALPHA</span>
-      <span>Now available for testing</span>
-    </div>
-
-    <h1>
-      Scalable & Modular <span class="gradient-text">Event-Driven</span> Applications
-    </h1>
-
-    <p class="subtitle">
-      Gland is a lightweight, modular framework for JavaScript and TypeScript,
-      designed for scalability with a powerful event-driven architecture.
-    </p>
-
-    <div class="cta-buttons">
-      <a href="/docs/getting-started" class="button primary">
-        Get Started
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M5 12H19M19 12L12 5M19 12L12 19"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </svg>
-      </a>
-      <a href="https://github.com/glandjs/gland" class="button secondary">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0 1 12 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"
-            fill="currentColor"></path>
-        </svg>
-        GitHub
-      </a>
-      <a href="/examples" class="button tertiary">
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M10.3246 4.31731C10.751 2.5609 13.249 2.5609 13.6754 4.31731C13.9508 5.45193 15.2507 5.99038 16.2478 5.38285C17.7913 4.44239 19.5576 6.2087 18.6172 7.75218C18.0096 8.74925 18.5481 10.0492 19.6827 10.3246C21.4391 10.751 21.4391 13.249 19.6827 13.6754C18.5481 13.9508 18.0096 15.2507 18.6172 16.2478C19.5576 17.7913 17.7913 19.5576 16.2478 18.6172C15.2507 18.0096 13.9508 18.5481 13.6754 19.6827C13.249 21.4391 10.751 21.4391 10.3246 19.6827C10.0492 18.5481 8.74926 18.0096 7.75219 18.6172C6.2087 19.5576 4.44239 17.7913 5.38285 16.2478C5.99038 15.2507 5.45193 13.9508 4.31731 13.6754C2.5609 13.249 2.5609 10.751 4.31731 10.3246C5.45193 10.0492 5.99037 8.74926 5.38285 7.75218C4.44239 6.2087 6.2087 4.44239 7.75219 5.38285C8.74926 5.99037 10.0492 5.45193 10.3246 4.31731Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-          <path
-            d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"></path>
-        </svg>
-        View Examples
-      </a>
-    </div>
+<section class="relative min-h-screen flex items-center pt-24 pb-20 overflow-hidden px-container">
+  <!-- Background elements -->
+  <div class="absolute inset-0 z-0">
+    <div class="absolute top-20 right-20 w-96 h-96 rounded-full"></div>
+    <div class="absolute bottom-20 left-20 w-80 h-80 rounded-full"></div>
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-1/2 bg-gradient-to-b from-primary/5 to-transparent opacity-30"></div>
   </div>
 
-  <CodeBlock lang="typescript">
-    {
-      `
+  <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 lg:gap-20 relative z-10">
+    <!-- Text Content Column -->
+    <div class="flex flex-col justify-center space-y-8">
+      <!-- Badge -->
+      <div class="group inline-flex items-center gap-2 bg-background-tertiary/80 backdrop-blur-sm border border-border/60 rounded-full pl-1 pr-4 py-1 w-fit animate-fade-in-up" style="animation-delay: 0.1s;">
+        <span class="bg-primary text-white px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide">ALPHA</span>
+        <span class="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-300">Now available for testing</span>
+      </div>
+
+      <!-- Main Heading -->
+      <div class="space-y-4 animate-fade-in-up" style="animation-delay: 0.3s;">
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary">
+          <span class="block text-text-primary">Scalable & Modular</span>
+          <span class="bg-gradient-to-r from-[#6ea8fe] to-[#a56eff] bg-clip-text text-transparent">
+            Event-Driven
+          </span>
+          <span class="text-text-primary">Applications</span>
+        </h1>
+      </div>
+
+      <!-- Description -->
+      <p class="text-xl text-text-secondary max-w-xl leading-relaxed animate-fade-in-up" style="animation-delay: 0.5s;">
+        Gland is a lightweight, modular framework for JavaScript and TypeScript,
+        designed for scalability with a powerful event-driven architecture.
+      </p>
+
+      <!-- CTA Buttons -->
+      <div class="flex flex-wrap items-center gap-4 pt-4 animate-fade-in-up" style="animation-delay: 0.7s;">
+        <a href="#" class="button-primary group">
+          Get Started
+          <svg class="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </a>
+        <a href="#" class="button-secondary group">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.167 6.839 9.489.5.092.682-.217.682-.48 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.022A9.606 9.606 0 0112 6.82c.85.004 1.705.114 2.504.336 1.909-1.29 2.747-1.022 2.747-1.022.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.841-2.337 4.687-4.565 4.935.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.48A10.019 10.019 0 0022 12c0-5.523-4.477-10-10-10z" />
+          </svg>
+          GitHub
+        </a>
+        <a href="#" class="button-tertiary group">
+          <svg class="w-5 h-5 text-primary" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          View Examples
+        </a>
+      </div>
+    </div>
+
+    <!-- Code Block Column -->
+    <div class="relative flex items-center animate-fade-in" style="animation-delay: 0.9s;">
+      <div class="absolute -inset-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl filter blur-xl opacity-70"></div>
+
+      <div class="relative w-full rounded-xl overflow-hidden border border-border shadow-2xl">
+
+
+        <CodeBlock
+          lang="typescript"
+          filename="app"
+        >
+          {
+            `
         import { GlandFactory } from '@gland/core';
         import { UserModule } from './user.module';
 
@@ -90,7 +82,10 @@ import CodeBlock from "@components/CodeBlock.astro";
         app.listen(3000, {
           message: "Server running on http://localhost:3000"
         });
-        `
-    }
-  </CodeBlock>
+            `
+          }
+        </CodeBlock>
+      </div>
+    </div>
+  </div>
 </section>

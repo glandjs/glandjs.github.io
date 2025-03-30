@@ -2,15 +2,23 @@
 import FeatureCard from "@components/FeatureCard.astro";
 ---
 
-<section class="features">
-  <div class="features-intro">
-    <h2>Why Choose Gland?</h2>
-    <p>
-      A modern event-driven framework for scalable and modular applications.
-    </p>
-  </div>
+<section class="py-24 relative overflow-hidden">
+  <!-- Background elements -->
+  <!-- <div class="absolute inset-0 z-0">
+    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGZpbGw9IiMyMDIwMjAiIGQ9Ik0wIDBoNjB2NjBIMHoiLz48cGF0aCBkPSJNNTkuNSA1OS41VjU5LjVoLTU5di01OSIgc3Ryb2tlPSIjMzAzMDMwIiBzdHJva2Utd2lkdGg9IjEiLz48L2c+PC9zdmc+')] opacity-20"></div>
+  </div> -->
 
-  <div class="features-grid">
+ <div class="relative z-10 px-container">
+   <div class="max-w-3xl mx-auto text-center mb-16 space-y-4">
+      <h2 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
+        Why Choose Gland?
+      </h2>
+      <p class="text-lg text-text-secondary/90 md:text-xl">
+        A modern event-driven framework for scalable and modular applications
+      </p>
+   </div>
+
+  <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
     <FeatureCard
       title="Event-Driven Core"
       icon="⚡"
@@ -42,4 +50,5 @@ import FeatureCard from "@components/FeatureCard.astro";
       description="Gland is designed to be lightweight and efficient, reducing unnecessary complexity and focusing on the core essentials for building scalable applications."
     />
   </div>
+ </div>
 </section>
