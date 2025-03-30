@@ -1,0 +1,146 @@
+---
+import CodeBlock from "@components/CodeBlock.astro";
+---
+
+<section class="code-examples">
+  <div class="section-header">
+    <h2>Event-Driven Architecture in Action</h2>
+    <!--
+    <p class="subtitle">See how events flow through a Gland application</p>
+      <div class="architecture-diagram">
+        <img src="/public/event-flow.svg" alt="Gland Event Flow Diagram" />
+      </div>
+
+     -->
+  </div>
+
+  <div class="tabs">
+    <div class="tab-buttons">
+      <button class="tab-button active" data-tab="basic">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="M14 6l-4.5 4.5 4.5 4.5V6m-4 9H6v-2h4v2m0-4H6V9h4v2m0-4H6V5h4v2m10 2h-2v6h2V7m0 8h-2v2h2v-2z"
+          ></path>
+        </svg>
+        Basic Flow
+      </button>
+
+      <button class="tab-button" data-tab="advanced">
+        <svg width="20" height="20" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="M10 3H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1m10 10h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1M10 15H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1m13-8h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1z"
+          ></path>
+        </svg>
+        Chained Events
+      </button>
+    </div>
+
+    <!-- Basic Flow -->
+    <div class="tab-content active" data-tab="basic">
+      <div class="code-explanation">
+        <div class="explanation-text">
+          <h3>Core Event Flow</h3>
+          <ol class="flow-steps">
+            <li>
+              <span class="step-number">1</span>
+              HTTP Request is sent to <code>/users</code>
+              <span class="arrow">→</span>
+            </li>
+            <li>
+              <span class="step-number">2</span>
+              Controller emits <code>users:list</code> event with request context
+              <span class="arrow">→</span>
+            </li>
+            <li>
+              <span class="step-number">3</span>
+              Event listeners process the <code>users:list</code> event
+              <span class="arrow">→</span>
+            </li>
+            <li>
+              <span class="step-number">4</span>
+              Response event is emitted
+            </li>
+          </ol>
+        </div>
+        <CodeBlock
+          lang="typescript"
+          filename="user.controller.ts"
+          lineNumbers
+          highlightLines="5,9-11"
+        >
+          {
+            `
+        import { Controller, Context } from '@gland/core';
+
+        @Controller('users')
+        export class UserController {
+          @Get('/')
+          listUsers(ctx: Context) {
+            // Emit event without knowing handlers
+            ctx.emit('users:list', {
+              query: ctx.query,
+              auth: ctx.state.user
+            });
+          }
+        }
+        `
+          }
+        </CodeBlock>
+      </div>
+    </div>
+
+    <!-- Chained Events -->
+    <div class="tab-content" data-tab="advanced">
+      <div class="code-explanation">
+        <div class="explanation-text">
+          <h3>Event Processing Chain</h3>
+          <div class="event-chain">
+            <div class="event-node">
+              <span class="event-name">user:signup</span>
+              <span class="event-desc">Validate Input</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="event-node">
+              <span class="event-name">user:validated</span>
+              <span class="event-desc">Create DB Entry</span>
+            </div>
+            <div class="arrow">→</div>
+            <div class="event-node">
+              <span class="event-name">user:created</span>
+              <span class="event-desc">Send Welcome Email</span>
+            </div>
+          </div>
+        </div>
+        <CodeBlock
+          lang="typescript"
+          filename="auth.channel.ts"
+          lineNumbers
+          highlightLines="3-5,8-10"
+        >
+          {
+            `
+        import { Channel, On } from '@gland/core';
+
+        @Channel('auth')
+        export class AuthChannel {
+          @On('user:signup')
+          async handleSignup({ email, password }) {
+            const user = await validateUser(email, password);
+            ctx.emit('user:validated', user);
+          }
+
+          @On('user:validated')
+          async createUserRecord(user) {
+            const dbUser = await db.users.create(user);
+            ctx.emit('user:created', dbUser);
+          }
+        }
+        `
+          }
+        </CodeBlock>
+      </div>
+    </div>
+  </div>
+</section>
