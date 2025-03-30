@@ -178,12 +178,6 @@ import CodeBlock from "@components/CodeBlock.astro";
           content.style.animation = '';
         }
       });
-
-
-      const activeContent = document.querySelector(`.tab-content[data-tab="${tabId}"]`);
-      if (activeContent) {
-        activeContent.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
     };
 
 
