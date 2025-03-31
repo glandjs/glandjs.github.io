@@ -1165,11 +1165,6 @@ body {
   opacity: 0;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.8s ease-out forwards;
-  opacity: 0;
-}
-
 @keyframes float {
   0%,
     100% {
@@ -1338,6 +1333,20 @@ body {
   }
 }
 
+.code-block-glass {
+  background: radial-gradient(
+      ellipse at 75% 25%,
+      rgba(100, 108, 255, 0.15) 0%,
+      rgba(100, 108, 255, 0.05) 45%,
+      rgba(2, 8, 23, 0.9) 100%
+    ) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(100, 108, 255, 0.15);
+  box-shadow: 0 8px 32px rgba(2, 8, 23, 0.5),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
 .absolute {
   position: absolute;
 }
@@ -1348,10 +1357,6 @@ body {
 
 .sticky {
   position: sticky;
-}
-
-.-inset-4 {
-  inset: -1rem;
 }
 
 .inset-0 {
@@ -1817,10 +1822,6 @@ body {
   white-space: nowrap;
 }
 
-.break-words {
-  overflow-wrap: break-word;
-}
-
 .rounded {
   border-radius: 0.25rem;
 }
@@ -2057,10 +2058,6 @@ body {
 
 .to-primary {
   --tw-gradient-to: rgb(var(--primary) / 1) var(--tw-gradient-to-position);
-}
-
-.to-primary\/5 {
-  --tw-gradient-to: rgb(var(--primary) / 0.05) var(--tw-gradient-to-position);
 }
 
 .to-text-secondary {
@@ -2432,10 +2429,6 @@ body {
   filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
 }
 
-.filter {
-  filter: var(--tw-blur) var(--tw-brightness) var(--tw-contrast) var(--tw-grayscale) var(--tw-hue-rotate) var(--tw-invert) var(--tw-saturate) var(--tw-sepia) var(--tw-drop-shadow);
-}
-
 .backdrop-blur-lg {
   --tw-backdrop-blur: blur(16px);
   -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
@@ -2709,9 +2702,20 @@ body {
     gap: 1rem;
   }
 
+  .sm\:space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+  }
+
   .sm\:text-4xl {
     font-size: 2.25rem;
     line-height: 2.5rem;
+  }
+
+  .sm\:text-sm {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
   }
 
   .sm\:text-xl {
@@ -2889,10 +2893,6 @@ body {
 }
 
 @media (min-width: 1024px) {
-  .lg\:flex {
-    display: flex;
-  }
-
   .lg\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
