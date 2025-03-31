@@ -421,4 +421,17 @@
       color: rgb(var(--primary));
     }
   }
+  .code-block-glass {
+    background: radial-gradient(
+      ellipse at 75% 25%,
+      rgba(100, 108, 255, 0.15) 0%,
+      rgba(100, 108, 255, 0.05) 45%,
+      rgba(2, 8, 23, 0.9) 100%
+    ) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(100, 108, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(2, 8, 23, 0.5),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  }
 }
