@@ -2,14 +2,11 @@
 export interface Props {
   lang?: string;
   filename?: string;
-  class?: string;
-  div?:string
 }
 
 const {
   lang = "javascript",
   filename = "",
-  class: className = ""
 } = Astro.props;
 
 const langColors = {
@@ -19,7 +16,7 @@ const langColors = {
 };
 ---
 
-<div class={`group relative rounded-lg md:rounded-xl border border-border bg-background-secondary/50 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all overflow-hidden ${className}`}>
+<div class="group relative rounded-lg md:rounded-xl border border-border bg-background-secondary/50 backdrop-blur-lg shadow-lg hover:shadow-xl transition-all overflow-hidden">
   <!-- Header -->
   <div class="flex items-center justify-between px-3 md:px-4 py-2 md:py-3 bg-background-tertiary/80 border-b border-border">
     <!-- Window Controls -->
@@ -60,9 +57,9 @@ const langColors = {
   </div>
 
   {/* Code Container */}
-    <pre class="overflow-x-auto p-3 md:p-4 text-xs md:text-sm ">
-      <code class="font-mono text-text-primary [&>.token]:animate-highlight">
+  <pre class="overflow-x-auto p-3 md:p-4 text-xs md:text-sm leading-relaxed scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
+    <code class="font-mono text-text-primary [&>.token]:animate-highlight break-words">
         <slot />
       </code>
-    </pre>
+   </pre>
 </div>

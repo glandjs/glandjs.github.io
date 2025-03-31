@@ -12,16 +12,16 @@ import CodeBlock from "@components/CodeBlock.astro";
 
    <div class="max-w-7xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-20 relative z-10">
     <!-- Text Content Column -->
-    <div class="flex flex-col justify-center space-y-4 sm:space-y-6 text-center md:text-left">
+    <div class="flex flex-col justify-center space-y-6 text-center md:text-left">
       <!-- Badge -->
-      <div class="group inline-flex items-center gap-2 bg-background-tertiary/80 text-xs sm:text-sm backdrop-blur-sm border border-border/60 rounded-full pl-1 pr-4 py-1 w-fit mx-auto md:mx-0 animate-fade-in-up" style="animation-delay: 0.1s;">
+      <div class="group inline-flex items-center gap-2 bg-background-tertiary/80 backdrop-blur-sm border border-border/60 rounded-full pl-1 pr-4 py-1 w-fit mx-auto md:mx-0 animate-fade-in-up" style="animation-delay: 0.1s;">
         <span class="bg-primary text-white px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide">ALPHA</span>
         <span class="text-sm text-text-secondary group-hover:text-text-primary transition-colors duration-300">Now available for testing</span>
       </div>
 
        <!-- Main Heading -->
       <div class="space-y-3 md:space-y-4 animate-fade-in-up" style="animation-delay: 0.3s;">
-        <h1 class="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary">
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary">
           <span class="block text-text-primary">Scalable & Modular</span>
           <span class="bg-gradient-to-r from-[#6ea8fe] to-[#a56eff] bg-clip-text text-transparent">
             Event-Driven
@@ -60,22 +60,28 @@ import CodeBlock from "@components/CodeBlock.astro";
     </div>
 
      <!-- Code Block Column -->
-    <CodeBlock
-        lang="typescript"
-        filename="app.ts"
-        class="code-block-glass"
-      >
-        {`
-          import { GlandFactory } from '@gland/core';
-          import { UserModule } from './user.module';
+    <div class="relative lg:flex items-center animate-fade-in overflow-hidden" style="animation-delay: 0.9s;">
+      <div class="relative w-full rounded-xl overflow-hidden border border-border shadow-2xl">
+        <CodeBlock
+          lang="typescript"
+          filename="app"
+        >
+          {
+            `
+        import { GlandFactory } from '@gland/core';
+        import { UserModule } from './user.module';
 
-          // Create app instance
-          const app = GlandFactory.create(UserModule);
+        // Create app instance
+        const app = GlandFactory.create(UserModule);
 
-          // Start HTTP server
-          app.listen(3000, {
-            message: "Server running on http://localhost:3000"
-          });
-        `}
-    </CodeBlock>
+        // Start HTTP server
+        app.listen(3000, {
+          message: "Server running on http://localhost:3000"
+        });
+            `
+          }
+        </CodeBlock>
+      </div>
+    </div>
+  </div>
 </section>
