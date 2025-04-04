@@ -1,55 +1,45 @@
-# Starlight Starter Kit: Tailwind
+# Gland Framework Documentation
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+Welcome to the official documentation repository for Gland Framework. This site is your central resource for learning about Gland’s core concepts, architecture, and advanced topics—all designed to help you build scalable, modular, event-driven applications with ease.
 
-```
-pnpm create astro@latest -- --template starlight/tailwind
-```
+> **Note:** This documentation is a work in progress. The site structure is still evolving, and we appreciate your feedback to improve its content and usability.
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/starlight/tree/main/examples/tailwind)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/starlight/tree/main/examples/tailwind)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/withastro/starlight&create_from_path=examples/tailwind)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwithastro%2Fstarlight%2Ftree%2Fmain%2Fexamples%2Ftailwind&project-name=my-starlight-docs&repository-name=my-starlight-docs)
+## Documentation Site
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+Access the latest version of the documentation at:
+[https://glandjs.github.io/docs/](https://glandjs.github.io/docs/)
 
-## 🚀 Project Structure
+## Contributing
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+We welcome contributions to the Gland documentation! If you find an issue, typo, or have a suggestion to improve the documentation, please follow these steps:
 
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   ├── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-├── tailwind.config.mjs
-└── tsconfig.json
-```
+1. **Fork the repository** and clone it to your local machine.
+2. **Create a new branch** for your changes.
+3. **Commit your changes** with clear and concise messages.
+4. **Open a pull request (PR)** with a description of the changes and reference any related issues.
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+For more details on how to contribute, please refer to our [Contributing Guide](./docs/CONTRIBUTING.md).
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+## Reporting Issues
 
-Static assets, like favicons, can be placed in the `public/` directory.
+If you find a bug or an issue with the documentation, please open an issue on the [GitHub issues page](https://github.com/glandjs/gland/issues). When reporting an issue, make sure to provide as much detail as possible to help us quickly address it. You can use our issue templates for consistency and completeness:
 
-## 🧞 Commands
+- [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml)
+- [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml)
+- [Documentation Issue](.github/ISSUE_TEMPLATE/documentation_improvement.yml)
 
-All commands are run from the root of the project, from a terminal:
+## Code of Conduct
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
+We expect all contributors to follow our [Code of Conduct](./docs/CODE_OF_CONDUCT.md). Please treat everyone with respect and kindness, and help maintain a welcoming and professional environment for all.
 
-## 👀 Want to learn more?
+## Community
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+Join our community to discuss Gland, ask questions, and share your ideas:
+
+- **Discord:** [Join the Gland Community](https://discord.gg/nSMaEXkMUz)
+- **GitHub Issues:** [Report an Issue](https://github.com/glandjs/gland/issues)
+- **Stack Overflow:** Ask questions with the `gland` tag on [Stack Overflow](https://stackoverflow.com/questions/tagged/gland)
+
+## License
+
+Gland is licensed under the [MIT License](LICENSE).
