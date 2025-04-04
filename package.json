@@ -3,6 +3,16 @@
   "description": "The official documentation for the Gland frameword",
   "type": "module",
   "version": "1.0.0",
+  "author": "Mahdi",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/glandjs/docs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/glandjs/docs/issues"
+  },
+  "homepage": "https://glandjs.github.io/docs/",
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
