@@ -3,28 +3,27 @@ import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import tailwind from "@astrojs/tailwind";
 
+import mdx from "@astrojs/mdx";
+
 // https://astro.build/config
 export default defineConfig({
-  integrations: [
-    starlight({
-      title: "Gland",
-      social: {
-        github: "https://github.com/glandjs/gland",
+  integrations: [starlight({
+    title: "Gland",
+    social: {
+      github: "https://github.com/glandjs/gland",
+    },
+    sidebar: [
+      {
+        label: "Guides",
+        items: [
+          { label: "Example Guide", slug: "guides/example" },
+        ],
       },
-      sidebar: [
-        {
-          label: "Guides",
-          items: [
-            { label: "Example Guide", slug: "guides/example" },
-          ],
-        },
-        {
-          label: "Reference",
-          autogenerate: { directory: "reference" },
-        },
-      ],
-      customCss: ["./src/tailwind.css"],
-    }),
-    tailwind({ applyBaseStyles: false }),
-  ],
+      {
+        label: "Reference",
+        autogenerate: { directory: "reference" },
+      },
+    ],
+    customCss: ["./src/tailwind.css"],
+  }), tailwind({ applyBaseStyles: false }), mdx()],
 });
