@@ -7,6 +7,9 @@ import tailwind from "@astrojs/tailwind";
 export default defineConfig({
   integrations: [
     starlight({
+      expressiveCode: {
+        themes: ["vesper"],
+      },
       title: "Gland",
       social: {
         github: "https://github.com/glandjs/gland",
