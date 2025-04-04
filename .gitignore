@@ -12,11 +12,15 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+# macOS-specific files
+.DS_Store
+
+# JetBrains setting folder
+.idea/
 
 # environment variables
 .env
 .env.production
 
-# macOS-specific files
-.DS_Store
+# VS code setting folder
 .vscode/
