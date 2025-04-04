@@ -5,6 +5,8 @@ import tailwind from "@astrojs/tailwind";
 
 // https://astro.build/config
 export default defineConfig({
+  site: "https://glandjs.github.io/docs",
+  base: "/docs/",
   integrations: [
     starlight({
       expressiveCode: {
