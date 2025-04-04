@@ -1,5 +1,6 @@
 {
-  "name": "",
+  "name": "gland-docs",
+  "description": "The official documentation for the Gland frameword",
   "type": "module",
   "version": "0.0.1",
   "scripts": {
