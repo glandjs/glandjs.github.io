@@ -1,7 +1,8 @@
 {
   "name": "@glandjs/docs",
+  "description": "The official documentation for the Gland frameword",
+  "type": "module",
   "version": "1.0.0",
-  "description": "Official documentation site for the Gland framework.",
   "author": "Mahdi",
   "license": "MIT",
   "repository": {
@@ -12,18 +13,19 @@
     "url": "https://github.com/glandjs/docs/issues"
   },
   "homepage": "https://glandjs.github.io/docs/",
-  "type": "module",
   "scripts": {
-    "dev": "pnpm tailwind:build & astro dev",
+    "dev": "astro dev",
+    "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "start": "astro dev",
-    "tailwind:build": "tailwindcss -i ./src/styles/global.css -o ./public/global.css"
+    "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.5.5",
-    "tailwindcss": "^3.4.17"
-  },
-  "packageManager": "pnpm@9.15.4"
+    "@astrojs/starlight": "^0.32.5",
+    "@astrojs/starlight-tailwind": "^3.0.1",
+    "@astrojs/tailwind": "^5.1.4",
+    "astro": "^5.5.3",
+    "sharp": "^0.32.5",
+    "tailwindcss": "^3.4.4"
+  }
 }

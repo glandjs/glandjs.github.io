@@ -1,22 +1,7 @@
----
-import CodeBlock from "@components/CodeBlock.astro";
----
-<section class="py-24 border-t border-border bg-background-secondary px-container">
-  <div class="max-w-3xl mx-auto text-center mb-16 space-y-4">
-    <h2 class="text-4xl md:text-5xl font-bold bg-gradient-to-r from-text-primary to-text-secondary bg-clip-text text-transparent">
-      Event-Driven Architecture in Action
-    </h2>
-    <!--
-        <p class="subtitle">See how events flow through a Gland application</p>
-          <div class="architecture-diagram">
-            <img src="/public/event-flow.svg" alt="Gland Event Flow Diagram" />
-          </div>
-         -->
-  </div>
-
-  <div class="max-w-7xl mx-auto bg-background rounded-2xl border border-border shadow-xl overflow-hidden">
+<section>
+  <div class="max-w-7xl mx-auto rounded-2xl shadow-xl overflow-hidden">
      {/* Tab Buttons */}
-    <div class="flex flex-col sm:flex-row border-b border-border">
+    {/* <div class="flex flex-col sm:flex-row border-b border-border">
       <button
         class="tab-button group flex items-center gap-2 px-8 py-4 text-text-secondary hover:bg-background-tertiary data-[active=true]:text-primary data-[active=true]:border-b-2 data-[active=true]:border-primary transition-all"
         data-tab="basic"
@@ -43,7 +28,7 @@ import CodeBlock from "@components/CodeBlock.astro";
         </svg>
         Chained Events
       </button>
-    </div>
+    </div> */}
 
     {/* Tab Contents */}
     <div class="p-8">
@@ -65,7 +50,7 @@ import CodeBlock from "@components/CodeBlock.astro";
                       {step === 3 && 'Event listeners process '}
                       {step === 4 && 'Response event is emitted'}
                       {step !== 4 && (
-                        <code class="font-mono text-sm bg-background-tertiary px-2 py-1 rounded">
+                        <code class="font-mono text-sm px-2 rounded">
                           {step === 1 ? '/users' : step === 2 ? 'users:list' : 'users:list'}
                         </code>
                       )}
@@ -76,12 +61,7 @@ import CodeBlock from "@components/CodeBlock.astro";
             </ol>
           </div>
 
-          <CodeBlock
-            lang="typescript"
-            filename="user.controller"
-          >
-            {
-              `
+            ```js
             import { Controller, Context } from '@gland/core';
 
             @Controller('users')
@@ -95,14 +75,12 @@ import CodeBlock from "@components/CodeBlock.astro";
                 });
               }
             }
-            `
-            }
-          </CodeBlock>
+            ```
         </div>
       </div>
 
       {/* Advanced Tab Content */}
-      <div class="hidden tab-content" data-tab="advanced">
+      <div class="tab-content mt-40" data-tab="advanced">
         <div class="grid lg:grid-cols-2 gap-8">
           <div class="space-y-6">
             <h3 class="text-xl font-semibold text-text-primary">Event Processing Chain</h3>
@@ -126,12 +104,7 @@ import CodeBlock from "@components/CodeBlock.astro";
             </div>
           </div>
 
-          <CodeBlock
-            lang="typescript"
-            filename="auth.channel"
-          >
-            {
-              `
+          ```js
             import { Channel, On } from '@gland/core';
 
             @Channel('auth')
@@ -148,43 +121,10 @@ import CodeBlock from "@components/CodeBlock.astro";
                 ctx.emit('user:created', dbUser);
               }
             }
-            `
-            }
-          </CodeBlock>
+          ```
         </div>
       </div>
     </div>
+
   </div>
 </section>
-<script>
-  if (typeof window !== "undefined") {
-    const tabContents = document.querySelectorAll('.tab-content');
-    const tabButtons = document.querySelectorAll('[data-tab]');
-
-    const handleTabChange = (tabId) => {
-      tabButtons.forEach(button => {
-        const isActive = button.dataset.tab === tabId;
-        button.dataset.active = isActive;
-      });
-
-
-      tabContents.forEach(content => {
-        const shouldShow = content.dataset.tab === tabId;
-        content.classList.toggle('hidden', !shouldShow);
-
-        if (shouldShow) {
-          content.style.animation = 'tab-active 0.3s ease-out';
-        } else {
-          content.style.animation = '';
-        }
-      });
-    };
-
-
-    handleTabChange('basic');
-
-    tabButtons.forEach(button => {
-      button.addEventListener('click', () => handleTabChange(button.dataset.tab));
-    });
-  }
-</script>

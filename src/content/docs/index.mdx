@@ -1,0 +1,46 @@
+---
+title: Welcome to Starlight
+description: Get started building your docs site with Starlight.
+template: splash
+hero:
+  title: |
+    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-text-primary">
+          <span class="block text-text-primary">Scalable & Modular</span>
+          <span class="bg-gradient-to-r from-amber-300 to-amber-600 bg-clip-text text-transparent">
+            Event-Driven
+          </span>
+          <span class="text-text-primary">Applications</span>
+        </h1>
+  tagline: |
+    <p class="text-lg sm:text-xl text-text-secondary max-w-xl mx-auto md:mx-0 leading-relaxed animate-fade-in-up" style="animation-delay: 0.5s;">
+        Gland is a lightweight, modular framework for JavaScript and TypeScript,
+        designed for scalability with a powerful event-driven architecture.
+      </p>
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Getting Started
+      link: /guides/example/
+      icon: right-arrow
+    - text: See some examples
+      link: https://github.com/glandjs/gland/tree/main/examples
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+import FeatureSection from "@sections/FeatureSection.astro";
+import CodeExampleSection from "@sections/CodeExampleSection.mdx";
+import CommunitySection from "@sections/CommunitySection.astro";
+
+## Why choose Gland?
+
+A modern event-driven framework for scalable and modular applications.
+
+<FeatureSection></FeatureSection>
+
+## Event-Driven Architecture in Action
+
+<CodeExampleSection></CodeExampleSection>
+
+<CommunitySection />
