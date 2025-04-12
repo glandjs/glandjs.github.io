@@ -1,0 +1,30 @@
+---
+interface Props {
+  author: string;
+  username: string;
+  content: string;
+  timeAgo: string;
+  avatarColor?: string;
+}
+
+const { author, username, content, timeAgo, avatarColor = 'bg-purple-400' } = Astro.props;
+---
+
+<div class="tweet-card flex-shrink-0 w-80 p-5 mx-3 rounded-xl bg-background-secondary/40 backdrop-blur-md border border-border/30 shadow-md hover:shadow-xl transition-all hover:-translate-y-1">
+  <div class="flex items-start mb-3">
+    <div class={`w-10 h-10 rounded-full ${avatarColor} flex items-center justify-center text-white font-semibold flex-shrink-0`}>
+      {author.charAt(0)}
+    </div>
+    <div class="ml-3">
+      <p class="font-semibold text-text-primary">{author}</p>
+      <p class="text-sm text-text-tertiary">@{username}</p>
+    </div>
+  </div>
+  <p class="text-text-secondary mb-3">{content}</p>
+  <div class="text-text-tertiary text-sm flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    {timeAgo}
+  </div>
+</div>

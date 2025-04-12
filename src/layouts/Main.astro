@@ -1,52 +1,28 @@
+---
+import HeroSection from "@components/home/HeroSection.astro";
+import TestimonialsSection from "@components/home/TestimonialsSection.astro";
+---
+
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gland</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
   </head>
   <body class="bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGZpbGw9IiMyMDIwMjAiIGQ9Ik0wIDBoNjB2NjBIMHoiLz48cGF0aCBkPSJNNTkuNSA1OS41VjU5LjVoLTU5di01OSIgc3Ryb2tlPSIjMzAzMDMwIiBzdHJva2Utd2lkdGg9IjEiLz48L2c+PC9zdmc+')]">
 
-    <main class="flex-grow">
-        <div class="hero">
-    <div class="hero-content">
-      <h1 class="gradient-text">Gland</h1>
-      <p class="hero-subtitle">A lightweight, modular framework for event-driven JavaScript and TypeScript applications.</p>
-
-      <div class="cta-buttons">
-        <a href="/docs" class="primary-button">Get Started</a>
-        <a href="https://github.com/glandjs/gland" class="secondary-button">View on GitHub</a>
-      </div>
-    </div>
-
-    <div class="code-preview" is:raw>
-      <pre><code>import { createApp } from 'gland';
-
-const app = createApp();
-
-app.on('greet', ({ name }) => {
-  console.log(`Hello, ${name}!`);
-});
-
-app.emit('greet', { name: 'World' });</code></pre>
-    </div>
-  </div>
-
-  <div class="features">
-    <div class="feature">
-      <h2>Lightweight</h2>
-      <p>Zero dependencies, minimal overhead, and a tiny footprint.</p>
-    </div>
-
-    <div class="feature">
-      <h2>Event-driven</h2>
-      <p>Built around a powerful event system for maximum flexibility.</p>
-    </div>
-
-    <div class="feature">
-      <h2>TypeScript-first</h2>
-      <p>Full type safety and excellent developer experience.</p>
-    </div>
-  </div>
+    <main class="flex-grow container mx-auto px-4 py-8">
+     <HeroSection />
+      <TestimonialsSection />
     </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
   </body>
 </html>

@@ -1,0 +1,114 @@
+---
+import { Icon } from '@astrojs/starlight/components';
+
+const navItems = [
+  { name: "Gland_", href: "/help" },
+  { name: "docs", href: "/docs" },
+  { name: "Changelogs", href: "/changelogs" },
+  { name: "Community", href: "/community" }
+];
+---
+
+  <div class="logo-section">
+    <img src="src/assets/logo.png" alt="Gland Logo" class="h-10 mr-3" />
+    <span>GLAND</span>
+  </div>
+
+  <div class="middle-section"></div>
+
+  <nav class="nav-links">
+    {navItems.map((item) => (
+      <div class="nav-item">
+        <a href={item.href} class="nav-link">
+          {item.name}
+        </a>
+      </div>
+    ))}
+
+    <a
+      href="https://github.com/glandjs/gland"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="github-icon"
+      aria-label="GitHub Repository"
+    >
+      <Icon name="github" class="w-5 h-5" />
+    </a>
+  </nav>
+
+  <button
+    class="mobile-menu-button"
+    aria-label="Toggle navigation menu"
+  >
+    <div class="relative w-5 h-5 flex items-center justify-center">
+      <div class="flex flex-col gap-1 w-5">
+        <span class="block h-0.5 w-full bg-gray-300 rounded-full"></span>
+        <span class="block h-0.5 w-full bg-gray-300 rounded-full"></span>
+        <span class="block h-0.5 w-3/4 ml-auto bg-gray-300 rounded-full"></span>
+      </div>
+    </div>
+  </button>
+
+<div class="mobile-menu">
+    {navItems.map((item) => (
+      <a
+        href={item.href}
+        class="block px-6 py-3 text-gray-400 hover:text-gray-200"
+      >
+        {item.name}
+      </a>
+    ))}
+    <a
+      href="https://github.com/glandjs/gland"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="flex items-center px-6 py-3 text-gray-400 hover:text-gray-200"
+    >
+      <Icon name="github" class="w-5 h-5 mr-3" />
+      GitHub
+    </a>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Mobile menu toggle
+    const mobileMenuButton = document.querySelector('.mobile-menu-button');
+    const mobileMenu = document.querySelector('.mobile-menu');
+
+    if (mobileMenuButton && mobileMenu) {
+      mobileMenuButton.addEventListener('click', () => {
+        mobileMenu.classList.toggle('active');
+      });
+    }
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      themeToggle.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme',
+          document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+        );
+      });
+    }
+
+    // Set initial theme based on localStorage or system preference
+    if (
+      localStorage.getItem('theme') === 'dark' ||
+      (!localStorage.getItem('theme') &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+
+    // Close mobile menu on window resize
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768 && mobileMenu.classList.contains('active')) {
+        mobileMenu.classList.remove('active');
+      }
+    });
+  });
+</script>

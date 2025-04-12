@@ -1,0 +1,189 @@
+---
+import Tweet from './Tweet.astro';
+
+const tweetsRowOne = [
+  {
+    author: 'Dev Cat',
+    username: 'devcat123',
+    content: 'Ever since I discovered Glandify™, my code has been 200% more glandalicious. 🚀💫',
+    timeAgo: '∞ ago',
+    avatarColor: 'bg-purple-400',
+  },
+  {
+    author: 'Codey McCodeface',
+    username: 'cmcf',
+    content: 'Moved all my spaghetti microservices into a GlandBall™. Now it’s just… sauce. 🍝',
+    timeAgo: 'last week maybe?',
+    avatarColor: 'bg-pink-400',
+  },
+  {
+    author: 'Binary Burrito',
+    username: 'bitwrap',
+    content: 'Gland turned my 10k lines of switch statements into pure vibes. Highly irrational. 💻✨',
+    timeAgo: '3.14 days ago',
+    avatarColor: 'bg-blue-400',
+  },
+  {
+    author: 'Dev Cat',
+    username: 'devcat123',
+    content: 'Ever since I discovered Glandify™, my code has been 200% more glandalicious. 🚀💫',
+    timeAgo: '∞ ago',
+    avatarColor: 'bg-purple-400',
+  },
+  {
+    author: 'Codey McCodeface',
+    username: 'cmcf',
+    content: 'Moved all my spaghetti microservices into a GlandBall™. Now it’s just… sauce. 🍝',
+    timeAgo: 'last week maybe?',
+    avatarColor: 'bg-pink-400',
+  },
+];
+
+const tweetsRowTwo = [
+  {
+    author: 'Stack Goblin',
+    username: 'goblinstack',
+    content: 'Every time I use Gland, my RAM cries tears of joy. Or bytes. Not sure. 🧠⚡',
+    timeAgo: '4 ticks ago',
+    avatarColor: 'bg-green-400',
+  },
+  {
+    author: 'Func Tion',
+    username: 'func_dev',
+    content: 'My app now runs so fast with Gland, I’m scared to blink. It might finish. ⚡👀',
+    timeAgo: '2 quantum cycles ago',
+    avatarColor: 'bg-yellow-400',
+  },
+  {
+    author: 'Pixel Wizard',
+    username: 'pixwiz',
+    content: 'Used Gland in my retro-futuristic pet project and now the toaster talks back. 🔮🧈',
+    timeAgo: 'sometime in the multiverse',
+    avatarColor: 'bg-blue-400',
+  },
+  {
+    author: 'Stack Goblin',
+    username: 'goblinstack',
+    content: 'Every time I use Gland, my RAM cries tears of joy. Or bytes. Not sure. 🧠⚡',
+    timeAgo: '4 ticks ago',
+    avatarColor: 'bg-green-400',
+  },
+  {
+    author: 'Func Tion',
+    username: 'func_dev',
+    content: 'My app now runs so fast with Gland, I’m scared to blink. It might finish. ⚡👀',
+    timeAgo: '2 quantum cycles ago',
+    avatarColor: 'bg-yellow-400',
+  },
+];
+---
+
+<section class="relative py-20 overflow-hidden">
+  <div class="container relative z-10">
+    <div class="max-w-3xl mx-auto mb-16 text-center">
+      <h2 class="text-3xl md:text-4xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">What Developers Say About Gland</h2>
+      <p class="text-lg text-text-secondary">Join thousands of developers building better applications with Gland.</p>
+    </div>
+
+    <!-- Tweets container -->
+    <div class="space-y-12">
+      <!-- Row 1: Left to Right -->
+      <div class="relative overflow-hidden">
+        <div class="tweets-row-left flex gap-4 animate-scroll-left">
+          {tweetsRowOne.map((tweet) => (
+            <Tweet
+              author={tweet.author}
+              username={tweet.username}
+              content={tweet.content}
+              timeAgo={tweet.timeAgo}
+              avatarColor={tweet.avatarColor}
+            />
+          ))}
+        </div>
+      </div>
+
+      <!-- Row 2: Right to Left -->
+      <div class="relative overflow-hidden">
+        <div class="tweets-row-right flex gap-4 animate-scroll-right">
+          {tweetsRowTwo.map((tweet) => (
+            <Tweet
+              author={tweet.author}
+              username={tweet.username}
+              content={tweet.content}
+              timeAgo={tweet.timeAgo}
+              avatarColor={tweet.avatarColor}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* Animation for tweets */
+  @keyframes scrollLeft {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(calc(-80rem)); }
+  }
+
+  @keyframes scrollRight {
+    0% { transform: translateX(calc(-80rem)); }
+    100% { transform: translateX(0); }
+  }
+
+  .animate-scroll-left {
+    animation: scrollLeft 40s linear infinite;
+  }
+
+  .animate-scroll-right {
+    animation: scrollRight 40s linear infinite;
+  }
+
+  /* Syntax highlighting */
+  .language-typescript {
+    color: #e6e6e6;
+  }
+
+  .language-typescript .token.keyword {
+    color: #c586c0;
+  }
+
+  .language-typescript .token.string {
+    color: #ce9178;
+  }
+
+  .language-typescript .token.comment {
+    color: #6a9955;
+  }
+
+  .language-typescript .token.function {
+    color: #dcdcaa;
+  }
+
+  .language-typescript .token.class-name {
+    color: #4ec9b0;
+  }
+
+  .language-typescript .token.decorator {
+    color: #569cd6;
+  }
+
+  .language-typescript .token.punctuation {
+    color: #d4d4d4;
+  }
+
+  /* Code window styling */
+  .code-window {
+    transition: transform 0.2s ease;
+  }
+
+  .code-window:hover {
+    transform: translateY(-5px);
+  }
+
+  /* Make the tweets lift on hover */
+  .tweet-card {
+    transition: all 0.3s ease;
+  }
+</style>

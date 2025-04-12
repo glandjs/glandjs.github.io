@@ -19,7 +19,6 @@ export default defineConfig({
       customCss: ['./src/tailwind.css'],
       components: {
         Header: '@components/Header.astro',
-        Footer: '@components/Footer.astro',
         ContentPanel: '@components/ContentPanel.astro',
         PageTitle: '@components/PageTitle.astro',
       },
