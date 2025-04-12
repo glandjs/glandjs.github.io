@@ -100,7 +100,7 @@
         </div>
 
   <!-- Code window -->
-  <div class="relative w-full h-full rounded-lg shadow-lg ">
+  <div class="relative w-full h-full rounded-lg shadow-lg my-4 ">
     <!-- Copy button -->
     <button
       class="absolute top-6 right-6 text-gray-300 bg-gray-700 hover:bg-gray-600 rounded p-1 transition"
@@ -113,7 +113,7 @@
       <span class="sr-only">Copy code</span>
     </button>
 <div class="absolute inset-0 z-0 rounded-lg blur-2xl opacity-30 "></div>
-      <pre id="gland-code" class="language-typescript line-numbers !bg-transparent   h-full w-full text-sm overflow-auto" is:raw>
+      <pre id="gland-code" class="language-typescript line-numbers !bg-transparent  h-full w-full text-sm " is:raw>
     <code>import { Broker } from '@glandjs/events';
     const gland = new Broker();
     gland.on("great", (text) => {
