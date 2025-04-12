@@ -309,30 +309,4 @@
       grid-template-columns: 1fr;
     }
   }
-  code[class*='language-'],
-  pre[class*='language-'] {
-    color: #e0e0e0;
-    background: transparent;
-    font-family: 'Fira Code', monospace;
-  }
-
-  .token.keyword {
-    color: #ff79c6;
-  }
-
-  .token.string {
-    color: #f1fa8c;
-  }
-
-  .token.function {
-    color: #8be9fd;
-  }
-
-  .token.parameter {
-    color: #bd93f9;
-  }
-
-  .token.punctuation {
-    color: #aaaaaa;
-  }
 }
