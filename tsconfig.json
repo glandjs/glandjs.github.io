@@ -4,7 +4,7 @@
     "paths": {
       "@components/*": ["src/components/*"],
       "@layouts/*": ["src/layouts/*"],
-      "@sections/*": ["src/sections/*"]
+      "@styles/*": ["src/styles/*"]
     }
   },
   "extends": "astro/tsconfigs/strict",

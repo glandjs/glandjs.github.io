@@ -3,6 +3,23 @@
 @tailwind utilities;
 @layer base {
   :root {
+    --sl-color-bg-sidebar: #13151f00;
+    --sl-content-width: 55rem;
+    --sl-sidebar-width: 16rem;
+    --sl-text-content-width: 70ch;
+    --sl-color-bg: #0c0e14;
+    --sl-color-bg-nav: #13151f;
+    --sl-color-bg-code: #13151f;
+    --sl-color-bg-inline-code: #1e2235;
+    --sl-color-text: #e2e8f0;
+    --sl-color-text-code: #d31818;
+    --sl-color-border: #b1d10f;
+    --sl-color-accent-low: #122f68;
+    --sl-color-accent: #3384ff;
+    --sl-color-accent-high: #d6e6ff;
+    --sl-color-selection-text: #ffffff;
+    --sl-color-selection-bg: #1d4ed8;
+
     --background: #090808;
     --background-secondary: #111111;
     --background-tertiary: #1a1a1a;
@@ -14,7 +31,11 @@
     --text-tertiary: 140 140 140;
     --primary: 130 148 255;
     --primary-light: 160 170 255;
-    --background-pattern: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjEiIGQ9Ik01OS41IDU5LjVWNTkuNWgtNTl2LTU5Ii8+PC9nPjwvc3ZnPg==');
+    --background-pattern: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjIpIiBzdHJva2Utd2lkdGg9IjEiIGQ9Ik01OS41IDU5LjVWNTkuNWgtNTl2LTU5Ii8+PC9nPjwvc3ZnPg==");
+  }
+  main {
+    @apply mx-auto px-4 md:px-6 lg:px-8;
+    max-width: var(--sl-content-width);
   }
 }
 
@@ -58,7 +79,7 @@
   }
 
   .nav-link::after {
-    content: '';
+    content: "";
     position: absolute;
     bottom: 0;
     left: 10%;
@@ -165,7 +186,7 @@
     background: var(--background);
 
     &::before {
-      content: '';
+      content: "";
       position: absolute;
       inset: 0;
       background: radial-gradient(
@@ -174,7 +195,9 @@
           rgba(9, 8, 8, 1) 70%
         ),
         var(--background-pattern);
-      background-size: cover, 60px 60px;
+      background-size:
+        cover,
+        60px 60px;
       background-repeat: no-repeat, repeat;
       z-index: -1;
     }
@@ -263,7 +286,7 @@
 
   .code-preview pre {
     margin: 0;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: "JetBrains Mono", monospace;
     font-size: 0.9rem;
     color: #eee;
     width: 100%;

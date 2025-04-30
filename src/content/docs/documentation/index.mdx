@@ -1,0 +1,231 @@
+---
+title: Getting Started with Gland
+description: Learn the basics of Gland and build your first event-driven server-side application
+---
+
+# Getting Started with Gland
+
+Welcome to Gland, a progressive, event-driven framework that reimagines how server-side applications are built. This guide will help you understand Gland's core concepts and set up your first project.
+
+## What is Gland?
+
+Gland is a lightweight, extensible web framework designed for modern JavaScript and TypeScript applications. At its core, Gland treats every interaction as an event, creating a truly event-driven architecture that enables modular, decoupled, and highly maintainable applications.
+
+Unlike traditional frameworks that rely on rigid structures or prescriptive patterns, Gland provides a flexible foundation where components communicate through events, allowing developers to focus on solving domain problems rather than conforming to framework conventions.
+
+```typescript
+// A simple Gland application
+@Controller('/')
+class HomeController {
+  @Get()
+  index(ctx: ExpressContext) {
+    ctx.emit('@response:send', ctx)
+  }
+}
+
+@Channel('response')
+export class Response {
+  @On('send')
+  index(ctx: ExpressContext) {
+    ctx.res.send('Hello World')
+  }
+}
+```
+
+## Gland Philosophy
+
+Gland is built around three core philosophical principles:
+
+### 1. Event-Driven Everything
+
+In Gland, every interaction is modeled as an event. This creates a system where components can communicate without tight coupling, making your application more modular and easier to test. By emitting and listening to events, components can interact without needing to know the implementation details of one another.
+
+### 2. Minimal Opinions, Maximum Flexibility
+
+Gland doesn't force you into a specific way of structuring your application. Instead, it provides the tools and patterns that allow you to organize your code in a way that makes sense for your specific use case. This flexibility allows Gland to adapt to your needs, not the other way around.
+
+### 3. Familiar Yet Progressive
+
+While introducing a novel event-driven approach, Gland incorporates familiar concepts from popular frameworks like dependency injection and decorators. This balance of innovation and familiarity creates a framework that feels both fresh and accessible.
+
+## Why Choose Gland?
+
+Gland offers several advantages for modern application development:
+
+- **Decoupled Architecture**: Components communicate through events, reducing tight coupling and making your code more maintainable.
+
+- **Enhanced Testability**: Event-driven design makes unit testing simpler and more effective.
+
+- **Adaptable Design**: Gland adapts to your domain model rather than forcing you to adapt to its conventions.
+
+- **Scalable Structure**: As your application grows, Gland's event-driven architecture keeps complexity manageable.
+
+- **TypeScript First**: Built with TypeScript in mind, providing strong typing and better developer experience.
+
+- **Framework Agnostic**: Works seamlessly with Express, Fastify, and other Node.js frameworks.
+
+## Prerequisites
+
+Before you start with Gland, make sure you have:
+
+- **Node.js** (v14.x or later)
+- **npm** (v6.x or later) or **yarn** (v1.22.x or later)
+- Basic knowledge of TypeScript (recommended)
+
+## Installation
+
+Getting started with Gland is straightforward:
+
+```bash
+# Using npm
+npm install @glandjs/core
+
+# Using yarn
+yarn add @glandjs/core
+
+# Using pnpm
+pnpm add @glandjs/core
+```
+
+For TypeScript projects, you'll also want to install the necessary TypeScript dependencies:
+
+```bash
+npm install typescript @types/node --save-dev
+```
+
+## Your First Gland Application
+
+Let's create a simple "Hello World" application to demonstrate Gland's event-driven approach.
+
+### 1. Create Project Structure
+
+First, set up a basic project structure:
+
+```
+my-gland-app/
+├── src/
+│   ├── controllers/
+│   │   └── hello.controller.ts
+│   ├── channels/
+│   │   └── response.channel.ts
+│   └── main.ts
+├── package.json
+└── tsconfig.json
+```
+
+### 2. Create Response Channel
+
+First, create a response channel that will handle sending responses:
+
+```typescript
+// src/channels/response.channel.ts
+import { Channel, On } from '@glandjs/core'
+import { ExpressContext } from '@glandjs/express'
+
+@Channel('response')
+export class ResponseChannel {
+  @On('send')
+  send(ctx: ExpressContext, message: string) {
+    ctx.res.send(message)
+  }
+}
+```
+
+### 3. Create Hello Controller
+
+Next, create a controller that will handle incoming requests:
+
+```typescript
+// src/controllers/hello.controller.ts
+import { Controller, Get } from '@glandjs/core'
+import { ExpressContext } from '@glandjs/express'
+
+@Controller('/')
+export class HelloController {
+  @Get()
+  index(ctx: ExpressContext) {
+    ctx.emit('@response:send', ctx, 'Hello World from Gland!')
+  }
+
+  @Get('greet/:name')
+  greet(ctx: ExpressContext) {
+    const name = ctx.req.params.name
+    ctx.emit('@response:send', ctx, `Hello, ${name}!`)
+  }
+}
+```
+
+### 4. Set Up Application Entry Point
+
+Finally, create the main application entry point:
+
+```typescript
+// src/main.ts
+import { GlandFactory, Module } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express'
+import { HelloController } from './controllers/hello.controller'
+import { ResponseChannel } from './channels/response.channel'
+
+@Module({
+  controllers: [HelloController],
+  channels: [ResponseChannel],
+})
+class AppModule {}
+
+async function bootstrap() {
+  const app = await GlandFactory.create(AppModule)
+  const express = app.connectTo(ExpressBroker)
+
+  express.listen(3000, () => {
+    console.log('Gland application is running on http://localhost:3000')
+  })
+}
+
+bootstrap()
+```
+
+### 5. Run Your Application
+
+Now you can run your application:
+
+```bash
+# Compile TypeScript
+npx tsc
+
+# Run the application
+node dist/main.js
+```
+
+Visit `http://localhost:3000` in your browser, and you should see "Hello World from Gland!".
+
+You can also try the greeting endpoint: `http://localhost:3000/greet/Developer` should display "Hello, Developer!".
+
+## Understanding the Event-Driven Flow
+
+Let's break down what's happening in our simple application:
+
+1. When a request comes to the root endpoint (`/`), the `index` method in `HelloController` is called.
+2. The controller emits an event `@response:send` with the context and message.
+3. The `ResponseChannel` listens for the `send` event on the `response` channel and handles sending the response.
+
+This separation of concerns demonstrates the essence of Gland's event-driven architecture. The controller doesn't need to know how responses are formatted or sent; it simply emits an event with the necessary data.
+
+## Next Steps
+
+Now that you've created your first Gland application, here are some suggested next steps:
+
+- Explore [Dependency Injection](/guides/dependency-injection) in Gland
+- Learn about [Channels and Events](/guides/channels-events) in depth
+- Discover how to [Connect to Different HTTP Frameworks](/guides/http-frameworks)
+- Check out the [Examples Gallery](/resources/examples) for more complex use cases
+
+## Community Resources
+
+- [GitHub Repository](https://github.com/glandjs/core)
+- [NPM Package](https://www.npmjs.com/package/@glandjs/core)
+- [Discord Community](https://discord.gg/glandjs)
+- [Stack Overflow](https://stackoverflow.com/questions/tagged/glandjs)
+
+---
+
+Gland is actively evolving. Join our community to contribute and shape the future of event-driven server-side applications.

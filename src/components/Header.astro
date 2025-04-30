@@ -3,14 +3,14 @@ import { Icon } from '@astrojs/starlight/components';
 
 const navItems = [
   { name: "Gland_", href: "/help" },
-  { name: "docs", href: "/docs" },
-  { name: "Changelogs", href: "/changelogs" },
-  { name: "Community", href: "/community" }
+  { name: "documentation", href: "/documentation" },
+  { name: "changelog", href: "/changelog" },
+  { name: "community", href: "/community" }
 ];
 ---
 
   <div class="logo-section">
-    <img src="/assets/logo.png"  alt="Gland Logo" class="h-10 mr-3" />
+    <img src="src/assets/logo.png"  alt="Gland Logo" class="h-10 mr-3" />
     <span>GLAND</span>
   </div>
 
@@ -74,7 +74,7 @@ const navItems = [
   document.addEventListener('DOMContentLoaded', () => {
     // Mobile menu toggle
     const mobileMenuButton = document.querySelector('.mobile-menu-button');
-    const mobileMenu = document.querySelector('.mobile-menu');
+    const mobileMenu = document.querySelector('.mobile-menu')!;
 
     if (mobileMenuButton && mobileMenu) {
       mobileMenuButton.addEventListener('click', () => {
