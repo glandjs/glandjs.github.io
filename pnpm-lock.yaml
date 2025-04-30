@@ -10,13 +10,16 @@ importers:
     dependencies:
       '@astrojs/starlight':
         specifier: ^0.32.5
-        version: 0.32.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))
+        version: 0.32.6(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))
       '@astrojs/starlight-tailwind':
         specifier: ^3.0.1
-        version: 3.0.1(@astrojs/starlight@0.32.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1)))(@astrojs/tailwind@5.1.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))(tailwindcss@3.4.17))(tailwindcss@3.4.17)
+        version: 3.0.1(@astrojs/starlight@0.32.6(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1)))(@astrojs/tailwind@5.1.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))(tailwindcss@3.4.17))(tailwindcss@3.4.17)
       '@astrojs/tailwind':
         specifier: ^5.1.4
         version: 5.1.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))(tailwindcss@3.4.17)
+      '@expressive-code/plugin-line-numbers':
+        specifier: ^0.41.2
+        version: 0.41.2
       astro:
         specifier: ^5.5.3
         version: 5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1)
@@ -42,8 +45,8 @@ packages:
   '@astrojs/markdown-remark@6.3.1':
     resolution: {integrity: sha512-c5F5gGrkczUaTVgmMW9g1YMJGzOtRvjjhw6IfGuxarM6ct09MpwysP10US729dy07gg8y+ofVifezvP3BNsWZg==}
 
-  '@astrojs/mdx@4.2.3':
-    resolution: {integrity: sha512-oteB88udzzZmix5kWWUMeMJfeB2Dj8g7jy9LVNuTzGlBh3mEkGhQr6FsIR43p0JKCN11fl5J7P/Ev4Q0Nf0KQQ==}
+  '@astrojs/mdx@4.2.5':
+    resolution: {integrity: sha512-iKGu9GssmypLWf6ycJu6OYa9E3W16KA2y3ApBPlZpz1pwR70xXEr2XugQUwxGfFCI2KcZLIND/9FdKM7ZXVffA==}
     engines: {node: ^18.17.1 || ^20.3.0 || >=22.0.0}
     peerDependencies:
       astro: ^5.0.0
@@ -62,8 +65,8 @@ packages:
       '@astrojs/tailwind': ^5.1.3 || ^6.0.0
       tailwindcss: ^3.3.3
 
-  '@astrojs/starlight@0.32.5':
-    resolution: {integrity: sha512-KYZsYbA5eEAsCO3XNc6DWDPml1JCD6GVusuB15fYq5dbxyB7RtC6kgwbtiEmr84maIjcQUmDtFJCz3sN4CdaSg==}
+  '@astrojs/starlight@0.32.6':
+    resolution: {integrity: sha512-ASWGwNzq+0TmJ+GJFFxFFxx6Yra7BqIIMQbvOy/cweTHjqejB6mcaEWtS3Mag12LM7tXCES7v/fzmdPgjz8Yxw==}
     peerDependencies:
       astro: ^5.1.5
 
@@ -258,8 +261,14 @@ packages:
   '@expressive-code/core@0.40.2':
     resolution: {integrity: sha512-gXY3v7jbgz6nWKvRpoDxK4AHUPkZRuJsM79vHX/5uhV9/qX6Qnctp/U/dMHog/LCVXcuOps+5nRmf1uxQVPb3w==}
 
+  '@expressive-code/core@0.41.2':
+    resolution: {integrity: sha512-AJW5Tp9czbLqKMzwudL9Rv4js9afXBxkSGLmCNPq1iRgAYcx9NkTPJiSNCesjKRWoVC328AdSu6fqrD22zDgDg==}
+
   '@expressive-code/plugin-frames@0.40.2':
     resolution: {integrity: sha512-aLw5IlDlZWb10Jo/TTDCVsmJhKfZ7FJI83Zo9VDrV0OBlmHAg7klZqw68VDz7FlftIBVAmMby53/MNXPnMjTSQ==}
+
+  '@expressive-code/plugin-line-numbers@0.41.2':
+    resolution: {integrity: sha512-xdRoScuFWQbYEpWTh6G7kJ0VK46kcUPHPMjRo3CG2ynZ1rqiJCC9FnZQQWQ7U8aGd/n7EnU3vJBkBeVqhZyEWg==}
 
   '@expressive-code/plugin-shiki@0.40.2':
     resolution: {integrity: sha512-t2HMR5BO6GdDW1c1ISBTk66xO503e/Z8ecZdNcr6E4NpUfvY+MRje+LtrcvbBqMwWBBO8RpVKcam/Uy+1GxwKQ==}
@@ -720,8 +729,8 @@ packages:
   bare-events@2.5.4:
     resolution: {integrity: sha512-+gFfDkR8pj4/TrWCGUGWmJIkBwuxPS5F+a5yWjOHQt2hHvNZd5YLzadjmDUtFmMM4y429bnKLa8bYBMHcYdnQA==}
 
-  bare-fs@4.1.2:
-    resolution: {integrity: sha512-8wSeOia5B7LwD4+h465y73KOdj5QHsbbuoUfPBi+pXgFJIPuG7SsiOdJuijWMyfid49eD+WivpfY7KT8gbAzBA==}
+  bare-fs@4.1.3:
+    resolution: {integrity: sha512-OeEZYIg+2qepaWLyphaOXHAHKo3xkM8y3BeGAvHdMN8GNWvEAU1Yw6rYpGzu/wDDbKxgEjVeVDpgGhDzaeMpjg==}
     engines: {bare: '>=1.16.0'}
     peerDependencies:
       bare-buffer: '*'
@@ -2291,7 +2300,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/mdx@4.2.3(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))':
+  '@astrojs/mdx@4.2.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))':
     dependencies:
       '@astrojs/markdown-remark': 6.3.1
       '@mdx-js/mdx': 3.1.0(acorn@8.14.1)
@@ -2320,15 +2329,15 @@ snapshots:
       stream-replace-string: 2.0.0
       zod: 3.24.2
 
-  '@astrojs/starlight-tailwind@3.0.1(@astrojs/starlight@0.32.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1)))(@astrojs/tailwind@5.1.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))(tailwindcss@3.4.17))(tailwindcss@3.4.17)':
+  '@astrojs/starlight-tailwind@3.0.1(@astrojs/starlight@0.32.6(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1)))(@astrojs/tailwind@5.1.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))(tailwindcss@3.4.17))(tailwindcss@3.4.17)':
     dependencies:
-      '@astrojs/starlight': 0.32.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))
+      '@astrojs/starlight': 0.32.6(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))
       '@astrojs/tailwind': 5.1.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))(tailwindcss@3.4.17)
       tailwindcss: 3.4.17
 
-  '@astrojs/starlight@0.32.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))':
+  '@astrojs/starlight@0.32.6(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))':
     dependencies:
-      '@astrojs/mdx': 4.2.3(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))
+      '@astrojs/mdx': 4.2.5(astro@5.6.1(jiti@1.21.7)(rollup@4.39.0)(typescript@5.8.2)(yaml@2.7.1))
       '@astrojs/sitemap': 3.3.0
       '@pagefind/default-ui': 1.3.0
       '@types/hast': 3.0.4
@@ -2490,9 +2499,25 @@ snapshots:
       unist-util-visit: 5.0.0
       unist-util-visit-parents: 6.0.1
 
+  '@expressive-code/core@0.41.2':
+    dependencies:
+      '@ctrl/tinycolor': 4.1.0
+      hast-util-select: 6.0.4
+      hast-util-to-html: 9.0.5
+      hast-util-to-text: 4.0.2
+      hastscript: 9.0.1
+      postcss: 8.5.3
+      postcss-nested: 6.2.0(postcss@8.5.3)
+      unist-util-visit: 5.0.0
+      unist-util-visit-parents: 6.0.1
+
   '@expressive-code/plugin-frames@0.40.2':
     dependencies:
       '@expressive-code/core': 0.40.2
+
+  '@expressive-code/plugin-line-numbers@0.41.2':
+    dependencies:
+      '@expressive-code/core': 0.41.2
 
   '@expressive-code/plugin-shiki@0.40.2':
     dependencies:
@@ -3000,7 +3025,7 @@ snapshots:
   bare-events@2.5.4:
     optional: true
 
-  bare-fs@4.1.2:
+  bare-fs@4.1.3:
     dependencies:
       bare-events: 2.5.4
       bare-path: 3.0.0
@@ -4818,7 +4843,7 @@ snapshots:
       pump: 3.0.2
       tar-stream: 3.1.7
     optionalDependencies:
-      bare-fs: 4.1.2
+      bare-fs: 4.1.3
       bare-path: 3.0.0
     transitivePeerDependencies:
       - bare-buffer
