@@ -3,8 +3,8 @@ import starlight from "@astrojs/starlight";
 import tailwind from "@astrojs/tailwind";
 
 export default defineConfig({
-  site: "https://glandjs.github.io/docs",
-  base: "/docs/",
+  site: "https://glandjs.github.io",
+  base: "/",
   integrations: [
     tailwind({
       applyBaseStyles: false
