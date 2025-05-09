@@ -1,0 +1,433 @@
+---
+title: '@glandjs/emitter'
+description: 'A blazing-fast, minimalistic event emitter designed for modern event-driven applications.'
+---
+
+# @glandjs/emitter
+
+A blazing-fast, minimalistic event emitter designed for modern event-driven applications.
+
+## Introduction
+
+`@glandjs/emitter` is a foundational building block within the Gland architecture—a zero-dependency, high-performance event emitter implemented in TypeScript. It is intentionally minimal, exposing only three core methods: `on`, `off`, and `emit`. But under this minimal surface lies a powerful and highly optimized engine, built for applications that rely on clean, scalable, and predictable communication patterns.
+
+In Gland, and in event-driven design more broadly, the _emitter_ is the central primitive for broadcasting and reacting to signals across isolated parts of a system. Whether you're implementing pub/sub mechanics, propagating domain events between services, or wiring up decoupled modules, `@glandjs/emitter` provides the atomic mechanism for sending and receiving these signals.
+
+## Why Event Emitters Matter
+
+Modern software systems—especially those that aim to be modular, distributed, or protocol-agnostic—must find alternatives to tight coupling. The traditional approach of direct method invocation between components creates rigid dependency chains and makes it difficult to reason about behavior, test components in isolation, or scale execution across boundaries like threads, processes, or even networks.
+
+Event emitters provide an elegant solution to this problem: they decouple producers and consumers by introducing a shared abstraction—the event channel. When a component emits an event, it need not know who will handle it, how many listeners are attached, or what happens next. Conversely, listeners can subscribe to events and respond to them as needed, without modifying the original emitter or its context. This model aligns perfectly with the principles of inversion of control, loose coupling, and modularity.
+
+In the context of Gland, where the goal is to build highly modular, protocol-agnostic, event-driven systems, a performant emitter is essential. Whether you're wiring up lifecycle events, triggering cross-cutting behaviors like logging or caching, or coordinating brokers across protocol boundaries, `@glandjs/emitter` acts as the low-level mechanism through which all higher-level abstractions operate.
+
+## Architectural Principles
+
+Internally, `@glandjs/emitter` is structured around a tree-based routing mechanism inspired by radix trees. This structure enables fast lookups, efficient memory usage, and support for wildcard patterns. Unlike naive emitter implementations that rely on flat maps or arrays to store handlers, the tree model allows for scalable event registration and resolution, especially when namespaces or hierarchical event topics are used (e.g., `user:login`, `user:logout`, `user:*`).
+
+The core architecture includes:
+
+- **Namespaced events:** Events are treated as string paths, allowing logical grouping and filtering.
+- **Wildcard matching:** Listeners can subscribe to partial patterns (`user:*`) to respond to families of events.
+- **Optimized dispatch:** The internal structure ensures logarithmic or constant-time dispatch in most real-world scenarios.
+- **Memory efficiency:** Listener references are stored and cleaned up without introducing memory leaks or unnecessary overhead.
+- **No external dependencies:** The emitter is completely self-contained, making it suitable for use in both browser and server environments.
+
+This design makes it ideal not only for Gland’s internal mechanics—such as channel brokers, module communication, or lifecycle orchestration—but also for use in standalone applications, libraries, or microservices that adopt event-driven patterns.
+
+## Design Philosophy
+
+Unlike general-purpose emitters that try to accommodate a wide range of features like once-only listeners, synchronous/asynchronous modes, or built-in logging, `@glandjs/emitter` adheres to a more focused philosophy: **do less, but do it extremely well.**
+
+The goal is not to cover every edge case out of the box, but to serve as a rock-solid core primitive on which more complex behavior can be built. This decision aligns with the larger Gland philosophy: **composability over complexity**. Instead of embedding additional logic directly into the emitter, the expectation is that consumers will compose behavior externally, using decorators, brokers, middleware, or their own custom layers—keeping the emitter itself minimal, pure, and predictable.
+
+In short, `@glandjs/emitter` is built not as a feature-rich end product, but as a minimal, high-performance contract—one that can be reliably embedded inside systems where latency, stability, and architecture correctness matter.
+
+## When to Use It
+
+In most Gland applications, `@glandjs/emitter` is used indirectly—wrapped inside broker instances or used by framework internals. However, you can also use it directly in scenarios where you want to establish lightweight communication between parts of your system without introducing a full broker layer.
+
+Examples include:
+
+- Isolated modules that emit internal lifecycle events.
+- UI components or backend services that need pub/sub behavior.
+- Temporary systems like feature flags, telemetry, or instrumentation logic.
+- Custom broker implementations that build on top of a low-level emitter.
+
+The flexibility, tiny footprint, and predictability of `@glandjs/emitter` make it suitable for virtually any environment—from frontend apps to backend services, from single-threaded runtime environments like Deno or Bun to fully containerized microservices.
+
+## Why `@glandjs/emitter` Exists
+
+The need for a high-performance, minimal event system became evident during the development of the Gland architecture. In a modular, decoupled system where parts of the application must communicate without tightly coupling to each other, events serve as the backbone for reactive design. However, most existing solutions are either bloated, untyped, or lack the fine-grained control required for scalable, layered applications.
+
+`@glandjs/emitter` was built from the ground up to address these challenges. It is designed to offer just enough—no more, no less. With only three fundamental APIs (`on`, `off`, and `emit`), it delivers blazing-fast event handling, while supporting advanced capabilities like hierarchical event names, wildcard pattern matching, and LRU-based caching. It does all this in a package that's less than 1.2 KB minified and has zero dependencies, making it ideal not only for large-scale applications, but also for libraries and environments where bundle size matters.
+
+In the context of Gland, `@glandjs/emitter` acts as the low-level communication layer between various brokers and modules. Because Gland encourages protocol-agnostic design, where components do not rely on the transport (e.g., HTTP, WebSocket), the event emitter provides a unified and efficient mechanism for internal signaling and orchestration. This allows Gland’s brokers to stay loosely coupled, dynamically extensible, and easy to test in isolation.
+
+## Event System Architecture
+
+At the core of `@glandjs/emitter` lies a tree-based architecture. This structure is more than an implementation detail—it defines how event relationships are modeled and traversed. Rather than storing events in a flat map, the emitter organizes them hierarchically, where each segment of an event name is a node in a radix-like tree.
+
+For instance, when you register a listener for `user:login`, the emitter parses the event name into segments (`["user", "login"]`) and stores the listener at the corresponding leaf of the tree. This structure significantly improves performance for operations like wildcard resolution and shared prefix optimizations, as listeners of related events benefit from shared traversal paths.
+
+Moreover, this tree architecture lends itself naturally to namespaced events. Events like `system:error` and `system:ok` are logically grouped under the same branch, and the emitter can quickly identify and resolve listeners registered on broader namespaces like `system:*` or `*:error`. Unlike flat emitters, where each lookup requires full key comparisons or custom logic for wildcarding, the tree structure reduces the computational complexity for both direct and wildcard matches.
+
+This architectural design makes it possible to emit, match, and resolve thousands of events per second without degrading performance—even in deeply nested or high-frequency environments.
+
+### Namespaced Event Design
+
+Event naming in `@glandjs/emitter` follows a convention that uses a delimiter (by default, `:`) to express hierarchy and scope. This approach mirrors file system paths or object property access, making it both intuitive and semantically meaningful.
+
+It also plays a critical role in modular architecture. For instance, modules responsible for authentication might operate under the `auth:*` namespace, while data handling modules may emit and listen to `data:*`. This isolation by convention allows different parts of an application to coexist peacefully while still communicating efficiently.
+
+### Wildcard Matching
+
+A powerful feature of `@glandjs/emitter` is its support for wildcard pattern matching. Developers can use the asterisk (`*`) as a segment placeholder to create flexible subscriptions that match multiple events.
+
+When a listener is registered on an event like `user:*`, it will automatically respond to any sub-event that shares the same prefix, such as `user:login`, `user:logout`, or `user:profile:updated`. Similarly, registering `*:error` allows for a global error handler that reacts to `auth:error`, `system:error`, and more.
+
+The wildcard matching is integrated deeply into the emitter's traversal logic. It is not implemented as a naive string pattern check, but as a specialized traversal path in the tree, ensuring performance remains consistent even when thousands of wildcard listeners are present.
+
+## Performance Model
+
+Performance is not an afterthought in `@glandjs/emitter`—it is the driving force behind every design decision. The emitter includes a lightweight LRU (Least Recently Used) caching layer that remembers the result of recent event resolutions. This means that for frequently emitted events, the emitter can bypass the tree traversal entirely and directly invoke the correct listeners from cache.
+
+This optimization is especially effective in real-time or high-frequency scenarios, such as logging, telemetry, or websocket communication. The cache is intelligently managed with a configurable size (defaulting to six entries) and is invalidated automatically when listeners are removed or changed.
+
+Additionally, every method in the emitter has been optimized to avoid unnecessary object allocations, deep clones, or event bubbling unless explicitly needed. The result is a system capable of handling tens of thousands of events per second with negligible memory overhead.
+
+## Quick Start
+
+Using `@glandjs/emitter` begins with a simple step: creating an emitter instance. This instance acts as the central hub for all event-based communication in your application. You can think of it as a lightweight event bus that lets any part of your system emit events and respond to them—without having direct references to one another.
+
+```ts
+import { EventEmitter } from '@glandjs/emitter'
+
+// Create an emitter instance
+const emitter = new EventEmitter()
+```
+
+Once the emitter is instantiated, you can register one or more listeners for specific events. These listeners are functions that will be called whenever the corresponding event is emitted.
+
+```ts
+emitter.on('user:login', (userData) => {
+  console.log(`User logged in: ${userData.username}`)
+})
+```
+
+Later, anywhere in your application, you can emit that event with an optional payload. The emitter will match the event name, resolve all matching listeners—including wildcard listeners—and invoke them in the order they were registered.
+
+```ts
+emitter.emit('user:login', {
+  username: 'alice',
+  timestamp: Date.now(),
+})
+```
+
+Listeners remain active until they are explicitly removed using `off()`.
+
+```ts
+emitter.off('user:login')
+```
+
+Behind the scenes, all of this is powered by a performant, namespaced, and cache-aware event tree. This means that even if your system grows to hundreds of modules and thousands of events, the emitter will remain consistent and efficient in behavior.
+
+## API Reference
+
+### Instantiating the Emitter
+
+All interactions with `@glandjs/emitter` begin with creating an instance of the `EventEmitter` class. This instance is entirely self-contained and does not rely on any global state, which means you can create multiple independent emitters across different parts of your application if needed.
+
+```ts
+import { EventEmitter } from '@glandjs/emitter'
+
+const emitter = new EventEmitter()
+```
+
+By default, the emitter uses a colon (`:`) as the delimiter for namespaced events, and caches the resolution of up to 6 recently accessed event patterns. You can customize these parameters if your architecture requires different semantics or performance tuning:
+
+```ts
+const emitter = new EventEmitter('/', 10)
+```
+
+The first argument defines the delimiter used to separate segments in event names, while the second controls the maximum number of events cached internally. Choosing an appropriate delimiter allows you to align the emitter with your domain conventions or avoid conflicts in systems where colon-separated tokens are already in use.
+
+---
+
+### Listening for Events: `on(eventName, listener)`
+
+To respond to events, you register a listener function using the `on` method. This function will be invoked each time the specified event (or a pattern-matching variant) is emitted.
+
+```ts
+emitter.on('user:login', (data) => {
+  console.log(`Welcome, ${data.username}`)
+})
+```
+
+The `eventName` argument is a string that identifies the event. It can be an exact name like `user:login`, or a wildcard pattern such as `user:*`. The second argument, `listener`, is a function that receives the payload emitted with the event.
+
+The `on` method returns the emitter instance, allowing method chaining if desired:
+
+```ts
+emitter.on('user:login', handleLogin).on('user:logout', handleLogout)
+```
+
+Internally, the listener is stored in a tree structure that reflects the hierarchical nature of namespaced events. If the event name contains wildcards, it is normalized and compiled into a pattern that the emitter uses during lookup.
+
+---
+
+### Removing Listeners: `off(eventName, listener?)`
+
+Listeners can be removed using the `off` method. You can remove a specific function from a specific event, or remove **all** listeners associated with that event name.
+
+```ts
+// Remove a specific function
+emitter.off('user:login', handleLogin)
+
+// Remove all listeners for a given event name
+emitter.off('user:logout')
+```
+
+When a function is passed as the second argument, only that function is removed. If you omit the second argument, every listener associated with that event name will be detached. As with `on`, the `off` method returns the emitter instance for chaining:
+
+```ts
+emitter.off('user:*')
+```
+
+Note: Wildcard removal is _not_ recursive. Removing `user:*` only removes listeners attached to the exact `user:*` pattern, not to `user:login` or `user:logout`. You must call `off` for each pattern you wish to remove.
+
+---
+
+### Emitting Events: `emit(eventName, payload?)`
+
+To broadcast an event, use the `emit` method with the event name and an optional payload. All listeners that match the event name—whether through exact matching or wildcard rules—will be invoked synchronously in the order they were registered.
+
+```ts
+emitter.emit('user:login', {
+  username: 'bob',
+  timestamp: Date.now(),
+})
+```
+
+If no listeners are found, the call is a no-op and does not raise an error. This behavior encourages decoupled systems where the emitter does not need to know whether any listeners are currently present.
+
+The second argument, `payload`, can be of any type. It's passed as the first argument to all matching listeners. There is no restriction on its structure, although in TypeScript projects it’s recommended to define a consistent payload shape using generics.
+
+The method also returns the emitter instance for chaining:
+
+```ts
+emitter.emit('system:ready', {}).emit('metrics:flush', {})
+```
+
+## Type Safety
+
+Type safety is a core feature of `@glandjs/emitter`, allowing you to define and enforce strict contracts for every event your application emits or listens to. This ensures that both the event names and their payload structures are validated **at compile time**, eliminating entire classes of runtime bugs and improving developer productivity in large-scale systems.
+
+### Declaring an Event Map
+
+To begin, define an interface that describes the mapping between event names and their payloads. This is known as the **event map**:
+
+```ts
+interface AppEvents {
+  'user:login': { username: string; timestamp: number }
+  'user:logout': { username: string; reason?: string }
+  'data:update': { key: string; value: unknown }
+}
+```
+
+Each key in the map represents a valid event name, and its corresponding value defines the structure of the payload that must be passed when the event is emitted. You can think of this as a **type-safe schema** for your event system.
+
+---
+
+### Creating a Typed Emitter
+
+Once your event map is defined, you can pass it as a generic argument to the `EventEmitter` constructor:
+
+```ts
+const emitter = new EventEmitter<AppEvents>()
+```
+
+From this point on, all `on`, `off`, and `emit` operations are fully type-checked:
+
+```ts
+// ✅ Correct payload structure
+emitter.emit('user:login', {
+  username: 'alice',
+  timestamp: Date.now(),
+})
+
+// ❌ TypeScript Error: 'timestamp' is missing
+emitter.emit('user:login', {
+  username: 'bob',
+})
+```
+
+Similarly, listeners automatically infer the correct payload type based on the event name:
+
+```ts
+emitter.on('user:logout', (payload) => {
+  // payload is { username: string; reason?: string }
+  console.log(payload.username)
+})
+```
+
+You do not need to manually annotate the listener’s parameter — the type is inferred directly from the event map.
+
+---
+
+### Working Without a Map (Untyped Mode)
+
+If no type map is provided, the emitter works in **untyped mode**. In this mode, all event names are accepted, and payloads default to `any`. This offers maximum flexibility but disables all compile-time checks:
+
+```ts
+const emitter = new EventEmitter() // No generics
+
+emitter.emit('whatever:event', { foo: 42 }) // No error, but no safety
+```
+
+This mode may be appropriate for prototyping or scripting, but it’s strongly discouraged for production code.
+
+## Usage Patterns
+
+### Basic Event Handling
+
+In its simplest form, an `EventEmitter` lets you decouple the part of your system that dispatches events from the parts that react to them. Imagine a logging module that emits `"message"` events whenever it has new text; consumers elsewhere in your application can subscribe to those messages without ever importing or referencing the logger directly.
+
+```ts
+import { EventEmitter } from '@glandjs/emitter'
+
+const emitter = new EventEmitter()
+
+// Anywhere in your code, register a listener for "message" events
+emitter.on('message', (data) => {
+  console.log(`Received: ${data.text} (from ${data.sender})`)
+})
+
+// Later, when your logging module has something to report:
+emitter.emit('message', { text: 'Hello World', sender: 'System' })
+```
+
+When `emit` is called, the emitter looks up the `"message"` branch in its internal tree, finds every listener registered on that exact topic, and invokes them synchronously in registration order. If no listeners exist, nothing happens—your emitter never throws.
+
+### Fluid Method Chaining
+
+Because each call to `on`, `off`, or `emit` returns the emitter instance itself, you can build a fluent registration style for improved readability. This is especially helpful when you have a series of lifecycle events to wire up in one module.
+
+```ts
+const emitter = new EventEmitter()
+  .on('start', () => console.log('Starting…'))
+  .on('progress', (p) => console.log(`Progress: ${p.percent}%`))
+  .on('complete', () => console.log('All done!'))
+
+// Later in the same module:
+emitter.emit('start', {}).emit('progress', { percent: 42 }).emit('complete', {})
+```
+
+Here, the emitter builds its event-tree incrementally. When `progress` fires, the look‑up is optimized by caching that branch, so repeated `emit('progress', …)` calls bypass the full tree traversal.
+
+### Domain‑Driven Hierarchies
+
+Large applications often group events by domain or subsystem. By choosing a consistent naming convention—such as `<domain>:<action>`—you create a clear separation of concerns. This also makes your codebase self‑documenting: scanning a list of event names gives you an immediate overview of your system’s capabilities.
+
+```ts
+const emitter = new EventEmitter()
+
+// Database lifecycle
+emitter.on('db:connected', () => console.log('DB is up'))
+emitter.on('db:disconnected', () => console.log('DB is down'))
+
+// User management
+emitter.on('user:created', (user) => console.log(`New user: ${user.id}`))
+emitter.on('user:updated', (user) => console.log(`User updated: ${user.id}`))
+emitter.on('user:deleted', (id) => console.log(`User removed: ${id}`))
+
+// System health
+emitter.on('system:start', () => console.log('System booting…'))
+emitter.on('system:stop', () => console.log('System shutting down'))
+```
+
+Under the hood, each segment (“db”, “user”, “system”) becomes a branch in the emitter’s tree. When you later decide to add wildcard or namespace‑wide listeners, the hierarchy is already in place.
+
+### Wildcard Subscriptions
+
+Wildcard patterns let you listen to entire branches of your event tree with a single registration. This is ideal for cross‑cutting concerns—logging every database event, catching any error, or auditing all user activity.
+
+```ts
+// Log every database event without listing them one by one
+emitter.on('db:*', (info) => {
+  console.log(`DB event [${info.type}]:`, info)
+})
+
+// Catch any error from any domain
+emitter.on('*:error', (err) => {
+  console.error(`Error in ${err.domain}:`, err.message)
+})
+
+// Audit every action in a nested user namespace
+emitter.on('user:*:activity', (event) => {
+  auditLogger.log(`User ${event.userId} did ${event.action}`)
+})
+```
+
+When you register a wildcard like `db:*`, the emitter compiles that pattern into a traversal rule. On each `emit`, it efficiently walks the tree, matching literal segments first and then any active wildcard branches.
+
+### Lifecycle Cleanup
+
+Long‑running applications or UI components must avoid memory leaks by removing listeners when they’re no longer needed. The `off` method gives you precise control over listener teardown, either by removing a single handler or by clearing an entire topic.
+
+```ts
+const tempHandler = (data) => console.log('Temp event:', data)
+
+// Add a temporary listener
+emitter.on('temp-event', tempHandler)
+
+// …after some asynchronous work completes…
+emitter.off('temp-event', tempHandler)
+
+// If you ever need to clear all handlers for "temp-event":
+emitter.off('temp-event')
+```
+
+Behind the scenes, `off('temp-event', tempHandler)` finds the exact leaf node in the event tree and removes only that function, leaving other listeners intact. Calling `off('temp-event')` prunes the entire branch, reclaiming memory and ensuring your emitter stays lean.
+
+## Contributing
+
+We welcome your help in making `@glandjs/emitter` better—whether you’re reporting bugs, suggesting new features, improving documentation, or submitting code changes. Every contribution, no matter how small, helps the project grow and serve its users more effectively.
+
+To get started, please clone the repository and review our guidelines:
+
+First, make sure you’ve read the [Contributing Guide](https://github.com/glandjs/emitter/blob/main/docs/CONTRIBUTING.md), which explains our branch‑naming conventions, commit message style, and test requirements. Then take a look at our [Code of Conduct](https://github.com/glandjs/emitter/blob/main/docs/CODE_OF_CONDUCT.md) to understand the standards we uphold for a respectful and inclusive community.
+
+If you discover a bug or have a suggestion for a new feature, open an issue describing the problem, how to reproduce it, and what you’d expect instead. When you’re ready to propose a change, create a topic branch off `main`, implement your fix or enhancement, and add tests that demonstrate the correct behavior. Before submitting your pull request, run the test suite with `npm test` to ensure that all existing and new tests pass, and format your code with `npm run lint` to satisfy our style rules.
+
+Pull requests are evaluated based on correctness, clarity of intent, completeness of test coverage, and adherence to our style guidelines. Once you submit, a maintainer will review your changes, provide feedback, and work with you to get your contribution merged.
+
+## License
+
+`@glandjs/emitter` is distributed under the MIT License. You can find the full text of the license in the [LICENSE](https://github.com/glandjs/emitter/blob/main/LICENSE) file. In summary, you are free to use, modify, and distribute this software, provided that you include the original copyright and license notice.
+
+```text
+MIT © Mahdi — See LICENSE file for details
+```
+
+## FAQ
+
+**How is `@glandjs/emitter` different from other event libraries?**
+Most emitters impose large APIs, include many optional features, or rely on external dependencies. In contrast, `@glandjs/emitter` focuses on three core methods—`on`, `off`, and `emit`—while delivering advanced capabilities such as wildcard matching, hierarchical event namespaces, and LRU caching. Its internal tree‑based design and zero‑dependency build make it particularly suited for high‑performance, scalable systems.
+
+**Can I use `@glandjs/emitter` in a browser environment?**
+Absolutely. The package ships as a tiny ECMAScript module that works seamlessly in modern browsers, as well as in Node.js. Its minified bundle size is under 1.2 KB, so it’s an excellent choice for front‑end apps where minimizing payload is critical.
+
+**Does the emitter support asynchronous listeners?**
+Yes. While event dispatch itself is synchronous—listeners are invoked immediately in registration order—you may register `async` functions as handlers. Doing so lets you perform asynchronous work (for example, awaiting network requests) inside your listener, and you can even emit further events as part of that process.
+
+**Is there a built‑in mechanism for one‑time listeners or bulk removal?**
+By design, `@glandjs/emitter` keeps its API minimal. There are no `once` or `removeAllListeners` methods out of the box. This ensures the core remains small and predictable. If you need one‑time handlers, you can wrap `on` in a small helper that calls `off` after the first invocation. Similarly, bulk removal across namespaces can be scripted with helper functions that iterate through your known event names.
+
+**What happens if I emit an event with no listeners?**
+Emitting an event for which no listeners exist is a no‑operation. No errors are thrown, and performance remains unaffected. This behavior supports loosely coupled architectures where the emitter does not need to know whether any consumers are listening.
+
+**Are there practical limits on event or listener counts?**
+There is no hard cap in the implementation. In theory, you can register as many events and listeners as your environment’s memory allows. However, we recommend removing listeners when they’re no longer needed—especially in long‑lived applications or single‑page apps—to avoid unbounded memory growth.
+
+If you have additional questions or suggestions for this FAQ, please open an issue or submit a pull request to enrich our documentation.
