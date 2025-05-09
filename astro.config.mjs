@@ -65,32 +65,21 @@ export default defineConfig({
       ],
       sidebar: [
         {
-          label: 'Packages',
-          collapsed: false,
-          items: [
-            {
-              label: 'Emitter',
-              link: '/packages/emitter',
-              badge: 'New',
-            },
-          ],
-        },
-        {
           label: 'Introduction',
           collapsed: false,
           items: [
             {
               label: 'Getting Started',
-              link: '/getting-started',
+              link: '/documentation/getting-started',
               badge: 'New',
             },
             {
               label: 'Installation',
-              link: '/installation',
+              link: '/documentation/installation',
             },
             {
               label: 'Quickstart',
-              link: '/quickstart',
+              link: '/documentation/quickstart',
             },
           ],
         },
@@ -135,6 +124,17 @@ export default defineConfig({
             {
               label: 'Best Practices',
               link: '/guides/best-practices',
+            },
+          ],
+        },
+        {
+          label: 'Packages',
+          collapsed: false,
+          items: [
+            {
+              label: 'Emitter',
+              link: '/packages/emitter',
+              badge: 'New',
             },
           ],
         },
