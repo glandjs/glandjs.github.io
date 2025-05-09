@@ -1,3 +1,11 @@
+<p align="center">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./public/dark-mode-image.png">
+  <source media="(prefers-color-scheme: light)" srcset="./public/light-mode-image.png">
+  <img alt="GlandJs - Documentation" src="./public/dask-mode-image.png">
+</picture>
+</p>
+
 # Gland Framework Documentation
 
 Welcome to the official documentation repository for Gland Framework. This site is your central resource for learning about Gland’s core concepts, architecture, and advanced topics—all designed to help you build scalable, modular, event-driven applications with ease.
