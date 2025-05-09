@@ -11,10 +11,6 @@ export default defineConfig({
     }),
     starlight({
       title: 'Gland',
-      logo: {
-        src: './src/assets/logo.svg',
-        alt: 'Gland Documentation',
-      },
       social: {
         github: 'https://github.com/glandjs/docs',
         discord: 'https://discord.gg/glandjs',
