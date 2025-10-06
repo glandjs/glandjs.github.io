@@ -65,15 +65,6 @@ export default defineConfig({
           collapsed: false,
           items: [
             {
-              label: 'Getting Started',
-              link: '/documentation/getting-started',
-              badge: 'New',
-            },
-            {
-              label: 'Installation',
-              link: '/documentation/installation',
-            },
-            {
               label: 'Quickstart',
               link: '/documentation/quickstart',
             },
