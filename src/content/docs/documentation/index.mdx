@@ -1,11 +1,73 @@
 ---
-title: Getting Started with Gland
-description: Learn the basics of Gland and build your first event-driven server-side application
+title: Documentation | Glandjs
+description: Minimal,precise,production-style introdution to Gland and step-by-step guide to creating your first event-driven server application.
 ---
 
-# Getting Started with Gland
+## Introduction
+Gland is an event-first, protocol-agnostic framework conceived for building robust, modular server-side applications in TypeScript and JavaScript. Its central premise is to treat domain behavior as composable events rather than as monolithic request handlers, thereby enabling a clear separation between business intent and transport mechanics. The framework deliberately keeps its core minimal and orthogonal, providing a compact set of primitives that encourage predictable control flow, straightforward testing, and long-lived maintainability.
 
-Welcome to Gland.
+At the architectural level, Gland provides a concise vocabulary for composing applications. Modules act as composition boundaries that register controllers, channels and providers. Controllers receive incoming interactions or translated transport signals and emit well-scoped domain events. Channels subscribe to event namespaces and encapsulate side effects such as response emission, persistence operations and integration with external services. Brokers are the protocol adapters that bridge external transports to the event system; each protocol implementation, whether HTTP, WebSocket or RPC, is realized as an independent broker that translates transport specifics into a uniform interaction context.
+
+The framework’s core is intentionally protocol-agnostic. This means that transport concerns are delegated to broker adapters rather than embedded in business logic. A project that requires HTTP can attach an HTTP broker that constructs per-interaction context objects and emits controller-level events, while the same domain code can be reused with a WebSocket or RPC broker by changing only the adapter wiring. This separation facilitates replacement of the transport layer, polyglot deployment models and clearer operational reasoning.
+Dependency injection and inversion of control are first-class constructs within Gland, but they are exercised with restraint in order to preserve conceptual clarity. Providers are declaratively registered within modules and injected into controllers and channels; such injection supports testability and modular reasoning without producing hidden coupling. The result is an environment in which domain services remain explicit, injectable, and straightforward to mock in unit tests.
+Performance and determinism are design priorities. Gland’s eventing subsystem is engineered for high throughput and low overhead. The emitter component that underpins event dispatching is conceived to be compact and fast, employing techniques such as prefix-aware event indexing, caching of subscription lookups, pooling of transient resources and wildcard matching optimizations. In practice, common event-dispatch operations are implemented to achieve constant or logarithmic time complexity for the dominant paths, making Gland suitable for services with tight latency or concurrency requirements.
+The ecosystem reflects a pragmatic modularization. The core package provides the DI container, module bootstrap and the minimal runtime primitives. An events package implements the broker and channel primitives with namespaced event handling, propagation semantics and strategy-based invocation. Protocol-specific packages supply brokers and typed context objects for Express, Fastify or alternative runtimes, while small purpose-built packages supply extremely compact emitters or adapter helpers. This layered decomposition means teams can adopt only the pieces they need and replace or extend individual parts without destabilizing the rest of the system.
+Developer ergonomics are emphasized throughout. Gland is TypeScript-first and ships with conservative but useful typings for controllers, channels and contexts. The public API intentionally remains small and explicit, reducing cognitive load and the incidence of accidental complexity. This design makes refactoring safer, documentation simpler and onboarding faster for engineers accustomed to strong typing and explicit contracts.
+Testing and observability are natural byproducts of the event-driven approach. Unit tests can exercise controllers by asserting emitted events, while channels can be tested in isolation by invoking handlers with lightweight context fakes. Integration tests focus on broker wiring and end-to-end event flows. Because side effects are concentrated in channels, test suites tend to be smaller, less brittle and more focused on domain behavior than on transport plumbing.
+In adoption scenarios, Gland excels where systems require a clean separation between domain logic and transport concerns, when teams prioritize maintainability and testability over framework-imposed patterns, and when substitutability of transports is desirable. It is suitable for API backends, microservice components, message-processing pipelines and hybrid systems that route the same domain model across multiple protocols.
+### Installation
+Below is a concise, polished installation and package overview for Gland. The tone is formal and exacting, intended for README or introductory docs. Each package description explains intent and scope; installation commands follow and are shown plainly so you can copy them directly.
+
+#### Core packages and what they are
+
+@glandjs/core — the minimal runtime and dependency-injection surface. This package contains the DI container, module bootstrap primitives, decorators and the small protocol-agnostic runtime that composes controllers, providers and channels. It is the foundation you install when you want to author application logic that remains transport-agnostic. For the canonical package entry see the npm page for @glandjs/core. ([npm][1])
+
+@glandjs/common — the collection of shared utilities, decorators and small helpers used across the Gland ecosystem. Common contains the ergonomics-level building blocks (Module decorator scaffolding, shared types, small helpers) that keep application code succinct and consistent across adapters and examples.
+
+@glandjs/emitter — the tiny, high-performance event emitter that underpins Gland’s messaging semantics. It is deliberately minimal (exposing only on, off and emit) yet engineered with a tree/radix-inspired routing model, wildcard support and caching for low-latency dispatch; this emitter is the recommended primitive for both framework internals and userland micro pub/sub use-cases. Full package documentation and API reference are available at the emitter package site. ([Gland][2])
+
+@glandjs/events — the event-broker layer: a namespaced, names-first broker and message bus that implements propagation semantics, broker-to-broker wiring and the higher-level event patterns used by controllers and channels. This package is the intended place for broker logic and the orchestration of channel subscriptions; consult the package repository and npm entry for the latest release and API notes. ([GitHub][3])
+
+Protocol adapters and examples
+
+At present the primary, officially supported adapter for HTTP is the Express adapter, published as @glandjs/express. This adapter demonstrates the adapter pattern: the same application code that uses Gland’s controllers and channels can be run with Express as the transport by connecting the runtime to the Express broker. The Express adapter is published to npm and is the reference example for how the Gland broker model maps to an HTTP server. ([npm][4])
+
+A small repository of fully worked samples is maintained in the main Gland monorepo; for a minimal runnable example consult the 01-simple sample in the samples directory of the gland repository. That example shows a complete project layout, bootstrapping via GlandFactory, and how to wire controllers and channels to the Express broker. ([GitHub][5])
+
+Installation and quick start
+
+To add the core pieces to a project, install the packages you need from npm. Typical commands (copy–paste these into your shell):
+
+npm install @glandjs/core @glandjs/common @glandjs/emitter @glandjs/events
+
+If you plan to use the Express adapter for HTTP, also install the adapter:
+
+npm install @glandjs/express
+
+If you prefer Fastify or another adapter, install the corresponding broker package instead; the adapter packages are intentionally small and act only as transport bridges.
+
+For TypeScript projects you will also want the type toolchain installed as dev dependencies:
+
+npm install --save-dev typescript @types/node
+
+Notes on package surface and documentation
+
+The emitter package is publicly documented and can be used independently of the rest of the framework; it is intentionally zero-dependency, compact and suitable for both frontend and backend consumption. The emitter documentation includes architectural notes (tree-based routing, wildcard semantics), a quick-start and API reference. ([Gland][2])
+
+The events package and the core runtime have living documentation and npm pages that describe their API and release cadence; when consulting docs, prefer the package-specific pages under the main documentation site pattern (for example, the packages page namespace under glandjs.github.io) or the respective npm/GitHub repositories for up-to-date changelogs and examples. ([npm][6])
+
+Samples and learning path
+
+Begin with the 01-simple sample in the repository to observe an end-to-end flow: module composition, controller emission, channel subscription and HTTP binding. Once the sample runs locally, try the same code with a different broker (for example Fastify) to validate Gland’s protocol-agnostic promise. The sample demonstrates the recommended project layout and the minimal bootstrap code you will replicate in production projects. ([GitHub][5])
+
+If you would like, I can now produce a ready-to-ship Installation page formatted for your docs site (plain HTML or Markdown as you prefer), or create a small copyable quickstart script (package.json, tsconfig and minimal bootstrap) that mirrors the 01-simple sample and is runnable out of the box. Which would you prefer?
+
+[1]: https://www.npmjs.com/package/%40glandjs/core?utm_source=chatgpt.com "glandjs/core"
+[2]: https://glandjs.github.io/packages/emitter/ "@glandjs/emitter | Gland"
+[3]: https://github.com/glandjs/events?utm_source=chatgpt.com "glandjs/events: lightweight event broker for EDS architecture."
+[4]: https://www.npmjs.com/package/%40glandjs%2Fexpress?utm_source=chatgpt.com "glandjs/express"
+[5]: https://github.com/glandjs/gland/tree/main/samples/01-simple "gland/samples/01-simple at main · glandjs/gland · GitHub"
+[6]: https://npmjs.com/package/%40glandjs/events?utm_source=chatgpt.com "glandjs/events"
 
 ## Community Resources
 
