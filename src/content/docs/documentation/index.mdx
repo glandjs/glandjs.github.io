@@ -28,35 +28,38 @@ Below is a concise, polished installation and package overview for Gland. The to
 
 @glandjs/events — the event-broker layer: a namespaced, names-first broker and message bus that implements propagation semantics, broker-to-broker wiring and the higher-level event patterns used by controllers and channels. This package is the intended place for broker logic and the orchestration of channel subscriptions; consult the package repository and npm entry for the latest release and API notes. ([GitHub][3])
 
-Protocol adapters and examples
+#### Protocol adapters and examples
 
 At present the primary, officially supported adapter for HTTP is the Express adapter, published as @glandjs/express. This adapter demonstrates the adapter pattern: the same application code that uses Gland’s controllers and channels can be run with Express as the transport by connecting the runtime to the Express broker. The Express adapter is published to npm and is the reference example for how the Gland broker model maps to an HTTP server. ([npm][4])
 
 A small repository of fully worked samples is maintained in the main Gland monorepo; for a minimal runnable example consult the 01-simple sample in the samples directory of the gland repository. That example shows a complete project layout, bootstrapping via GlandFactory, and how to wire controllers and channels to the Express broker. ([GitHub][5])
 
-Installation and quick start
+#### Installation and quick start
 
 To add the core pieces to a project, install the packages you need from npm. Typical commands (copy–paste these into your shell):
 
+```bash
 npm install @glandjs/core @glandjs/common @glandjs/emitter @glandjs/events
+```
 
 If you plan to use the Express adapter for HTTP, also install the adapter:
-
+```bash
 npm install @glandjs/express
-
+```
 If you prefer Fastify or another adapter, install the corresponding broker package instead; the adapter packages are intentionally small and act only as transport bridges.
 
 For TypeScript projects you will also want the type toolchain installed as dev dependencies:
-
+```bash
 npm install --save-dev typescript @types/node
+```
 
-Notes on package surface and documentation
+#### Notes on package surface and documentation
 
 The emitter package is publicly documented and can be used independently of the rest of the framework; it is intentionally zero-dependency, compact and suitable for both frontend and backend consumption. The emitter documentation includes architectural notes (tree-based routing, wildcard semantics), a quick-start and API reference. ([Gland][2])
 
 The events package and the core runtime have living documentation and npm pages that describe their API and release cadence; when consulting docs, prefer the package-specific pages under the main documentation site pattern (for example, the packages page namespace under glandjs.github.io) or the respective npm/GitHub repositories for up-to-date changelogs and examples. ([npm][6])
 
-Samples and learning path
+#### Samples and learning path
 
 Begin with the 01-simple sample in the repository to observe an end-to-end flow: module composition, controller emission, channel subscription and HTTP binding. Once the sample runs locally, try the same code with a different broker (for example Fastify) to validate Gland’s protocol-agnostic promise. The sample demonstrates the recommended project layout and the minimal bootstrap code you will replicate in production projects. ([GitHub][5])
 
