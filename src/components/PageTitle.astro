@@ -12,14 +12,14 @@ const { title, description, badge } = Astro.locals.starlightRoute.entry.data
 const PAGE_TITLE_ID = '_top'
 ---
 
-{
-  badge && (
+<div class="page-title">
+  {badge && (
     <p class="page-title__eyebrow">
       <code>{badge}</code>
     </p>
-  )
-}
+  )}
 
-<h1 id={PAGE_TITLE_ID}>{title}</h1>
+  <h1 id={PAGE_TITLE_ID}>{title}</h1>
 
-{description && <p class="page-title__description">{description}</p>}
+  {description && <p class="page-title__description">{description}</p>}
+</div>

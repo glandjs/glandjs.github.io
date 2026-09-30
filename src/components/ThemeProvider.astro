@@ -32,6 +32,7 @@ import { Icon } from '@astrojs/starlight/components'
     }
 
     const stored = read()
+    const pickerDefault = stored === 'light' ? 'light' : stored === '' ? 'auto' : 'dark'
 
     const prefersLight = () => window.matchMedia('(prefers-color-scheme: light)').matches
 
@@ -50,7 +51,7 @@ import { Icon } from '@astrojs/starlight/components'
        * Point every theme picker at the active theme. Defaults to the value the
        * picker should *show*, which is `auto` only when the user picked it.
        */
-      updatePickers(theme = stored === '' ? 'auto' : 'dark') {
+      updatePickers(theme = pickerDefault) {
         document.querySelectorAll('starlight-theme-select').forEach((picker) => {
           const select = picker.querySelector('select')
           if (select) select.value = theme

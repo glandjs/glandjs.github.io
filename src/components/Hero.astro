@@ -1,0 +1,255 @@
+---
+/**
+ * Landing-page hero (Starlight `Hero` override).
+ *
+ * Left column: copy, install command, actions. Right column: a tabbed code
+ * window. The snippets are rendered with Expressive Code (`<Code />`), so they
+ * get real syntax highlighting, preserved indentation, horizontal scrolling on
+ * narrow screens and a copy button — the same as every code block in the docs.
+ */
+import { Icon, Code } from '@astrojs/starlight/components'
+
+const { hero } = Astro.locals.starlightRoute.entry.data
+
+if (!hero) throw new Error('The Gland hero component requires hero frontmatter.')
+
+const { title, tagline, actions } = hero
+
+const installCommand = 'npm install @glandjs/core @glandjs/common @glandjs/events'
+
+const snippets = [
+  {
+    id: 'controller',
+    tab: 'Controller',
+    file: 'product.controller.ts',
+    mark: '7-10',
+    code: `import { Controller } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+import type { ExpressContext } from '@glandjs/express'
+import type { EventTypes } from '../shared/events.interface'
+
+@Controller('products')
+export class ProductController {
+  @Get()
+  async list(ctx: ExpressContext<EventTypes>) {
+    const products = await ctx.call('db:product:all', {})
+    return ctx.send({ products })
+  }
+}`,
+    caption: 'Controllers reply. They never touch the database.',
+  },
+  {
+    id: 'channel',
+    tab: 'Channel',
+    file: 'db.channel.ts',
+    mark: '6-9',
+    code: `import { Channel, On } from '@glandjs/common'
+import type { Product } from '../shared/events.interface'
+
+@Channel('db')
+export class Database {
+  private products = new Map<string, Product>()
+
+  @On('product:all')
+  async allProducts(): Promise<Product[]> {
+    return Array.from(this.products.values())
+  }
+}`,
+    caption: 'Channels own side effects, addressed as db:product:all.',
+  },
+  {
+    id: 'bootstrap',
+    tab: 'Bootstrap',
+    file: 'main.ts',
+    mark: '9-10',
+    code: `import 'reflect-metadata'
+import { GlandFactory } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express'
+import { AppModule } from './app.module'
+import type { EventTypes } from './shared/events.interface'
+
+async function bootstrap() {
+  const app = await GlandFactory.create(AppModule)
+  const server = app.connectTo(ExpressBroker<EventTypes>)
+  server.listen(3000, { message: 'API ready on :3000' })
+}
+void bootstrap()`,
+    caption: 'Brokers carry the transport. Swap the adapter, keep the app.',
+  },
+]
+
+const facts = [
+  { value: '3', label: 'method emitter' },
+  { value: '0', label: 'runtime deps in the emitter' },
+  { value: 'MIT', label: 'licensed' },
+]
+---
+
+<section class="gland-hero" aria-labelledby="gland-hero-title">
+  <div class="gland-hero__grid" aria-hidden="true"></div>
+
+  <div class="gland-hero__inner">
+    <div class="gland-hero__copy">
+      <div class="gland-hero__eyebrow">
+        <span class="gland-hero__eyebrow-dot" aria-hidden="true"></span>
+        <span>Node.js · TypeScript · Event-driven</span>
+      </div>
+
+      <h1 id="gland-hero-title" set:html={title}></h1>
+      <p class="gland-hero__tagline" set:html={tagline}></p>
+
+      <div class="gland-hero__actions">
+        {
+          actions.map((action) => (
+            <a
+              href={action.link}
+              class:list={['gland-hero__action', `gland-hero__action--${action.variant ?? 'minimal'}`]}
+              {...(action.link.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            >
+              {action.icon && <Icon name={action.icon} class="size-4" />}
+              <span set:html={action.text} />
+            </a>
+          ))
+        }
+      </div>
+
+      <div class="gland-hero__install">
+        <span class="gland-hero__install-prompt" aria-hidden="true">$</span>
+        <code data-copy-source>{installCommand}</code>
+        <button type="button" class="gland-hero__copy-btn" data-copy-button aria-label="Copy install command">
+          <span data-copy-label>Copy</span>
+        </button>
+      </div>
+
+      <ul class="gland-hero__facts">
+        {
+          facts.map((fact) => (
+            <li>
+              <strong>{fact.value}</strong>
+              <span>{fact.label}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="gland-hero__visual">
+      <div class="gland-hero__window" data-hero-tabs>
+        <div class="gland-hero__window-bar">
+          <div class="gland-hero__dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="gland-hero__tabs" role="tablist" aria-label="Code examples">
+            {
+              snippets.map((snippet, index) => (
+                <button
+                  type="button"
+                  role="tab"
+                  class="gland-hero__tab"
+                  id={`hero-tab-${snippet.id}`}
+                  aria-controls={`hero-panel-${snippet.id}`}
+                  aria-selected={index === 0 ? 'true' : 'false'}
+                  tabindex={index === 0 ? 0 : -1}
+                  data-tab={snippet.id}
+                >
+                  {snippet.tab}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+
+        {
+          snippets.map((snippet, index) => (
+            <div
+              class="gland-hero__panel"
+              role="tabpanel"
+              id={`hero-panel-${snippet.id}`}
+              aria-labelledby={`hero-tab-${snippet.id}`}
+              data-panel={snippet.id}
+              hidden={index !== 0}
+            >
+              <div class="gland-hero__file">{snippet.file}</div>
+              <Code code={snippet.code} lang="ts" frame="none" wrap={false} meta={`showLineNumbers mark={${snippet.mark}}`} />
+              <p class="gland-hero__caption">{snippet.caption}</p>
+            </div>
+          ))
+        }
+
+        <div class="gland-hero__window-footer">
+          <span><b aria-hidden="true"></b>events routed</span>
+          <span>HTTP broker</span>
+          <span>typed context</span>
+        </div>
+      </div>
+
+      <div class="gland-hero__glow gland-hero__glow--one" aria-hidden="true"></div>
+      <div class="gland-hero__glow gland-hero__glow--two" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  /**
+   * Tabs + copy button. Initialised on `astro:page-load` so it keeps working
+   * with the client router (view transitions), where a plain module script
+   * only runs once.
+   */
+  function initHero() {
+    document.querySelectorAll<HTMLElement>('[data-hero-tabs]').forEach((root) => {
+      if (root.dataset.ready) return
+      root.dataset.ready = 'true'
+
+      const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>('[data-tab]'))
+      const panels = Array.from(root.querySelectorAll<HTMLElement>('[data-panel]'))
+
+      const select = (id: string, focus = false) => {
+        tabs.forEach((tab) => {
+          const active = tab.dataset.tab === id
+          tab.setAttribute('aria-selected', String(active))
+          tab.tabIndex = active ? 0 : -1
+          if (active && focus) tab.focus()
+        })
+        panels.forEach((panel) => {
+          panel.hidden = panel.dataset.panel !== id
+        })
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => select(tab.dataset.tab!))
+        tab.addEventListener('keydown', (event) => {
+          const last = tabs.length - 1
+          let next = -1
+          if (event.key === 'ArrowRight') next = index === last ? 0 : index + 1
+          if (event.key === 'ArrowLeft') next = index === 0 ? last : index - 1
+          if (event.key === 'Home') next = 0
+          if (event.key === 'End') next = last
+          if (next > -1) {
+            event.preventDefault()
+            select(tabs[next].dataset.tab!, true)
+          }
+        })
+      })
+    })
+
+    document.querySelectorAll<HTMLElement>('.gland-hero__install').forEach((box) => {
+      const button = box.querySelector<HTMLButtonElement>('[data-copy-button]')
+      const label = box.querySelector<HTMLElement>('[data-copy-label]')
+      const source = box.querySelector<HTMLElement>('[data-copy-source]')
+      if (!button || !label || !source || button.dataset.ready) return
+      button.dataset.ready = 'true'
+
+      let timer: number | undefined
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(source.textContent ?? '')
+          label.textContent = 'Copied'
+        } catch {
+          label.textContent = 'Press Ctrl+C'
+        }
+        window.clearTimeout(timer)
+        timer = window.setTimeout(() => (label.textContent = 'Copy'), 1800)
+      })
+    })
+  }
+
+  document.addEventListener('astro:page-load', initHero)
+</script>

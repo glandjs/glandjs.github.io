@@ -32,9 +32,9 @@ const { name, version, role, description, href, repo } = Astro.props
     flex-direction: column;
     gap: 0.4rem;
     padding: 1.1rem 1.25rem;
-    border-radius: var(--__gland-radius);
-    border: 1px solid var(--__gland-surface-border);
-    background-color: var(--__gland-surface);
+    border-radius: var(--gland-radius);
+    border: 1px solid var(--gland-surface-border);
+    background-color: var(--gland-surface);
     transition:
       border-color 0.15s ease,
       background-color 0.15s ease,
@@ -43,7 +43,7 @@ const { name, version, role, description, href, repo } = Astro.props
 
   .package-card:hover {
     border-color: color-mix(in oklab, var(--sl-color-accent) 45%, transparent);
-    background-color: var(--__gland-surface-hover);
+    background-color: var(--gland-surface-hover);
     transform: translateY(-2px);
   }
 
@@ -55,7 +55,7 @@ const { name, version, role, description, href, repo } = Astro.props
   }
 
   .package-card__name {
-    font-family: var(--__gland-font-mono);
+    font-family: var(--sl-font-mono);
     font-size: 0.9375rem;
     font-weight: 600;
     color: var(--sl-color-white);
@@ -68,7 +68,7 @@ const { name, version, role, description, href, repo } = Astro.props
   }
 
   .package-card__version {
-    font-family: var(--__gland-font-mono);
+    font-family: var(--sl-font-mono);
     font-size: 0.6875rem;
     color: var(--sl-color-gray-3);
     white-space: nowrap;
@@ -97,7 +97,7 @@ const { name, version, role, description, href, repo } = Astro.props
     gap: 1rem;
     margin-top: 0.35rem;
     font-size: 0.75rem;
-    font-family: var(--__gland-font-mono);
+    font-family: var(--sl-font-mono);
   }
 
   .package-card__footer a {

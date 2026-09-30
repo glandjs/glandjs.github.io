@@ -2,25 +2,59 @@
 /**
  * Custom page footer (Starlight `Footer` override).
  *
- * Renders prev/next cards, the "edit this page" + "last updated" meta row and
- * a small legal bar. Data comes from `Astro.locals.starlightRoute`, which
- * Starlight populates from the `editLink`, `lastUpdated` and `pagination`
- * options in `astro.config.mjs`.
+ * Renders the "edit this page" + "last updated" meta row, prev/next cards and a
+ * responsive site footer (brand, link groups, legal bar). Data comes from
+ * `Astro.locals.starlightRoute`, which Starlight populates from the `editLink`,
+ * `lastUpdated` and `pagination` options in `astro.config.mjs`.
  */
 import { Icon } from '@astrojs/starlight/components'
 
+import logo from '../assets/gland-logo.svg'
+
 const { pagination, editUrl, lastUpdated } = Astro.locals.starlightRoute
 
-const links = [
-  { label: 'GitHub', href: 'https://github.com/glandjs/glandjs.github.io' },
-  { label: 'Source', href: 'https://github.com/glandjs/gland' },
-  { label: 'npm', href: 'https://www.npmjs.com/org/glandjs' },
-  { label: 'Discord', href: 'https://discord.gg/glandjs' },
+const groups = [
+  {
+    title: 'Docs',
+    links: [
+      { label: 'Introduction', href: '/introduction/what-is-gland' },
+      { label: 'Getting started', href: '/getting-started/installation' },
+      { label: 'Fundamentals', href: '/fundamentals/modules' },
+      { label: 'Guides', href: '/guides/testing' },
+      { label: 'FAQ', href: '/faq' },
+    ],
+  },
+  {
+    title: 'Packages',
+    links: [
+      { label: '@glandjs/core', href: '/packages/core' },
+      { label: '@glandjs/events', href: '/packages/events' },
+      { label: '@glandjs/emitter', href: '/packages/emitter' },
+      { label: '@glandjs/http', href: '/packages/http' },
+    ],
+  },
+  {
+    title: 'Community',
+    links: [
+      { label: 'GitHub', href: 'https://github.com/glandjs/gland', external: true },
+      { label: 'npm', href: 'https://www.npmjs.com/org/glandjs', external: true },
+      { label: 'Discord', href: 'https://discord.gg/glandjs', external: true },
+      { label: 'Changelog', href: '/changelog/gland' },
+    ],
+  },
+]
+
+const legalLinks = [
+  { label: 'License', href: 'https://github.com/glandjs/glandjs.github.io/blob/main/LICENSE' },
+  { label: 'Contributing', href: 'https://github.com/glandjs/glandjs.github.io/blob/main/CONTRIBUTING.md' },
+  { label: 'Security', href: 'https://github.com/glandjs/glandjs.github.io/blob/main/SECURITY.md' },
 ]
 
 const updated = lastUpdated
   ? new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(lastUpdated)
   : undefined
+
+const year = new Date().getFullYear()
 ---
 
 <footer class="sl-footer">
@@ -62,14 +96,46 @@ const updated = lastUpdated
     )
   }
 
+  <div class="sl-footer__site">
+    <div class="sl-footer__brand">
+      <a href="/" class="sl-footer__brand-name" aria-label="Gland — home">
+        <img src={logo.src} alt="" width="28" height="25" />
+        <span translate="no">Gland</span>
+      </a>
+      <p>
+        A lightweight, event-driven and protocol-agnostic framework for Node.js. Controllers express intent,
+        channels own side effects, brokers carry the transport.
+      </p>
+    </div>
+
+    {
+      groups.map((group) => (
+        <nav class="sl-footer__group" aria-label={group.title}>
+          <h2>{group.title}</h2>
+          <ul>
+            {group.links.map((link) => (
+              <li>
+                <a href={link.href} {...(link.external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      ))
+    }
+  </div>
+
   <div class="sl-footer__legal">
-    <p>Gland is an MIT-licensed open source project.</p>
-    <nav aria-label="Footer">
-      {links.map((link) => (
-        <a href={link.href} target="_blank" rel="noopener noreferrer">
-          {link.label}
-        </a>
-      ))}
+    <p>© {year} Gland contributors. Released under the MIT license.</p>
+    <nav aria-label="Legal">
+      {
+        legalLinks.map((link) => (
+          <a href={link.href} target="_blank" rel="noopener noreferrer">
+            {link.label}
+          </a>
+        ))
+      }
     </nav>
   </div>
 </footer>

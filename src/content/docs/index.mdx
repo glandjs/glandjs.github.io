@@ -3,7 +3,7 @@ title: Event-driven Node.js framework
 description: Gland is a lightweight, event-driven and protocol-agnostic framework for building modular Node.js applications.
 template: splash
 hero:
-  tagline: Event-driven, protocol-agnostic and TypeScript-first. Controllers emit, channels act, brokers carry the transport.
+  tagline: Build modular, testable backends where controllers express intent, channels own side effects, and brokers carry the transport.
   actions:
     - text: Get started
       link: /getting-started/installation
@@ -20,7 +20,101 @@ hero:
 ---
 
 import FeatureGrid from '@components/FeatureGrid.astro'
+import PackageGrid from '@components/PackageGrid.astro'
 
-## Built for a domain, not a framework
+<section class="home-section home-section--intro">
+  <div class="home-section__heading">
+    <span class="home-section__eyebrow">Why Gland</span>
+    <h2>Built for a domain, not a framework</h2>
+    <p>Keep domain behavior independent from transport, make side effects explicit, and let small primitives compose into the application you actually need.</p>
+  </div>
 
-<FeatureGrid />
+  <FeatureGrid />
+</section>
+
+<section class="home-section home-section--flow">
+  <div class="home-section__heading">
+    <span class="home-section__eyebrow">How it fits together</span>
+    <h2>One request, four clear responsibilities</h2>
+    <p>Every request follows the same path. Each step has a single job, so you always know where a behavior lives and what to replace when it changes.</p>
+  </div>
+
+  <ol class="home-flow">
+    <li class="home-flow__step">
+      <span class="home-flow__index">01</span>
+      <strong>Controller</strong>
+      <p>Receives the context, expresses intent and replies. It performs no side effects.</p>
+      <code>ctx.call('db:product:all')</code>
+    </li>
+    <li class="home-flow__step">
+      <span class="home-flow__index">02</span>
+      <strong>Typed event</strong>
+      <p>The contract between the two sides. A renamed event or payload is a compile error.</p>
+      <code>EventTypes</code>
+    </li>
+    <li class="home-flow__step">
+      <span class="home-flow__index">03</span>
+      <strong>Channel</strong>
+      <p>Owns the side effect: persistence, audit logs, notifications. Easy to fake in tests.</p>
+      <code>@Channel('db')</code>
+    </li>
+    <li class="home-flow__step">
+      <span class="home-flow__index">04</span>
+      <strong>Broker</strong>
+      <p>Carries the transport. Swap HTTP for another protocol without touching the domain.</p>
+      <code>ExpressBroker</code>
+    </li>
+  </ol>
+</section>
+
+<section class="home-section home-section--packages">
+  <div class="home-section__heading home-section__heading--row">
+    <div>
+      <span class="home-section__eyebrow">Packages</span>
+      <h2>Install only what you need</h2>
+      <p>The ecosystem is split by responsibility, so the runtime stays small and your dependency graph stays understandable.</p>
+    </div>
+    <a class="home-section__link" href="/packages/core">Browse packages <span>→</span></a>
+  </div>
+
+  <PackageGrid />
+</section>
+
+<section class="home-section home-section--path">
+  <div class="home-section__heading">
+    <span class="home-section__eyebrow">The path</span>
+    <h2>From first import to a real application</h2>
+    <p>Start with the mental model, build the smallest working app, then go deeper into controllers, channels, modules and brokers.</p>
+  </div>
+
+  <div class="home-path">
+    <a href="/introduction/what-is-gland" class="home-path__item">
+      <span class="home-path__number">01</span>
+      <span><strong>Understand</strong><small>What Gland is and why it is event-first.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+    <a href="/getting-started/installation" class="home-path__item">
+      <span class="home-path__number">02</span>
+      <span><strong>Install</strong><small>Set up the runtime and your first module.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+    <a href="/getting-started/first-steps" class="home-path__item">
+      <span class="home-path__number">03</span>
+      <span><strong>Build</strong><small>Ship a complete product API with channels.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+  </div>
+</section>
+
+<section class="home-section home-section--cta">
+  <div class="home-cta">
+    <div>
+      <h2>Build your first Gland app in minutes</h2>
+      <p>Install the packages, declare one event map and ship a complete product API with channels.</p>
+    </div>
+    <div class="home-cta__actions">
+      <a class="gland-hero__action gland-hero__action--primary" href="/getting-started/installation">Get started</a>
+      <a class="gland-hero__action gland-hero__action--minimal" href="/getting-started/first-steps">Read the tutorial</a>
+    </div>
+  </div>
+</section>
