@@ -49,6 +49,7 @@ export default defineConfig({
         // Same component, but with dark as the default colour scheme.
         ThemeProvider: '@components/ThemeProvider.astro',
         Header: '@components/Header.astro',
+        Hero: '@components/Hero.astro',
         PageTitle: '@components/PageTitle.astro',
         ContentPanel: '@components/ContentPanel.astro',
         Footer: '@components/Footer.astro',
@@ -71,7 +72,7 @@ export default defineConfig({
       head: [
         { tag: 'link', attrs: { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' } },
         // Keep the browser chrome in step with the active theme.
-        { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#0a0a0f' } },
+        { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#080a0d' } },
         { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#ffffff' } },
         { tag: 'meta', attrs: { name: 'color-scheme', content: 'dark light' } },
       ],
