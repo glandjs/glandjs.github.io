@@ -1,0 +1,19 @@
+name: glandjs.github.io
+description: "Official documentation website for the Gland framework — Astro + Starlight."
+author: Mahdi
+email: bitsgenix@gmail.com
+github_user: glandjs
+repo_name: glandjs.github.io
+license: MIT
+version: "1.0.0"
+language: typescript
+tags:
+  - "documentation"
+  - "astro"
+  - "starlight"
+  - "glandjs"
+  - "website"
+ci:
+  provider: github
+  validate_command: "pnpm build"
+  quality_command: "pnpm check"

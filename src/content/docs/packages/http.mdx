@@ -1,0 +1,413 @@
+---
+title: '@glandjs/http'
+badge: '@glandjs/http@1.0.0-beta'
+description: The HTTP layer — route decorators, HttpContext, the HttpCore application surface, HttpBroker and the server factory.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+`@glandjs/http` contains everything HTTP that is not specific to Express: the route
+decorators, the abstract context, the protocol-agnostic application object, and the
+broker that turns discovered routes into real ones. A concrete adapter such as
+`@glandjs/express` supplies the transport.
+
+```bash
+pnpm add @glandjs/http
+```
+
+## Why this layer exists
+
+> HTTP is not your app — it's just a protocol. Gland treats it that way.
+
+`@glandjs/http` creates an isolated, internal event channel named `http` which routes
+messages from incoming HTTP requests into your Gland modules and controllers — and
+then emits outgoing responses back through the same channel.
+
+The result is a clean separation of concerns: your core business logic doesn't know or
+care where a request came from or how the response is sent. It only handles events.
+
+**This package implements no HTTP server itself.** It defines the *interface* — a
+protocol contract — and relies on adapter packages such as
+[`@glandjs/express`](/packages/express) to handle the actual server lifecycle. That is
+what lets you plug in a different HTTP engine later without touching your application.
+
+The HTTP layer is designed to be replaceable. Every adapter connected to it becomes a
+plug-in that speaks the same language — message-driven, modular, and completely
+testable.
+
+
+## Route decorators
+
+Ten decorators, all taking an optional path. The default path is `'/'`.
+
+```ts
+import {
+  Get, Post, Put, Patch, Delete,
+  Options, Head, Search, All,
+  RequestMapping, RequestMethod,
+} from '@glandjs/http'
+```
+
+| Decorator | Method |
+| --- | --- |
+| `@Get(path?)` | `GET` |
+| `@Post(path?)` | `POST` |
+| `@Put(path?)` | `PUT` |
+| `@Delete(path?)` | `DELETE` |
+| `@Patch(path?)` | `PATCH` |
+| `@Options(path?)` | `OPTIONS` |
+| `@Head(path?)` | `HEAD` |
+| `@Search(path?)` | `SEARCH` |
+| `@All(path?)` | `ALL` |
+| `@RequestMapping({ path?, method? })` | any `RequestMethod` |
+
+They write `PATH_METADATA` and `METHOD_METADATA` onto the method function itself,
+which is exactly what core's `Explorer` reads.
+
+```ts
+@Controller('products')
+export class ProductController {
+  @Get()          list(ctx) {}
+  @Get(':id')     getOne(ctx) {}
+  @Post()         create(ctx) {}
+
+  @RequestMapping({ path: 'search', method: RequestMethod.GET })
+  search(ctx) {}
+}
+```
+
+<Aside type="caution" title="Pass a single string path">
+  The signature is `string | string[]`, but the path is concatenated downstream, so
+  an array produces a broken route. Use one string.
+</Aside>
+
+### `RequestMethod`
+
+```ts
+enum RequestMethod {
+  GET = 'GET', POST = 'POST', PUT = 'PUT', DELETE = 'DELETE', PATCH = 'PATCH',
+  ALL = 'ALL', OPTIONS = 'OPTIONS', HEAD = 'HEAD', SEARCH = 'SEARCH',
+  PROPFIND = 'PROPFIND', PROPPATCH = 'PROPPATCH', MKCOL = 'MKCOL',
+  COPY = 'COPY', MOVE = 'MOVE', LOCK = 'LOCK', UNLOCK = 'UNLOCK',
+}
+```
+
+## `HttpContext`
+
+The abstract context. Every adapter provides a concrete subclass.
+
+```ts
+abstract class HttpContext<TRequest = any, TResponse = any, TEvents extends EventRecord = EventRecord>
+  extends Context<TEvents> {
+  constructor(
+    protected readonly events: HttpEventCore<TEvents>,
+    public readonly req: TRequest,
+    public readonly res: TResponse,
+  )
+
+  params: Record<string, string>
+  host?: string
+
+  // Request
+  get body(): any
+  get query(): Record<string, string | string[] | undefined>
+  get headers(): Record<string, string | string[]>
+  get method(): RequestMethod
+  get path(): string
+  get url(): string
+  get originalUrl(): string
+  get hostname(): string
+  get ip(): string | undefined
+  get protocol(): string
+  get secure(): boolean
+  get xhr(): boolean
+  get stale(): boolean
+  get fresh(): boolean
+  get subdomains(): string[]
+  get cookies(): Record<string, string>
+  get signedCookies(): Record<string, string>
+  accepts(types?): string | false
+  is(type): string | false | null
+
+  // Response
+  status(code): this
+  send(data, statusCode?, headers?): this
+  json(data, statusCode?, headers?): this
+  html(html, statusCode?, headers?): this
+  text(text, statusCode?, headers?): this
+  xml(xml, statusCode?, headers?): this
+  jsonp(data): this
+  redirect(url): this
+  location(url): this
+  end(): this
+  attachment(filename?): this
+  vary(field): this
+  render(view, options?, callback?): this
+  sendFile(path, options?, callback?): this
+  download(path, filename, options?): this
+  format(formatters): this
+  sse(): this
+
+  // Headers
+  setHeader(name, value): this
+  setHeaders(headers): this
+  getHeader(name): string | string[] | undefined
+  hasHeader(name): boolean
+  removeHeader(name): this
+
+  // Cookies
+  setCookie(name, value, options?): this
+  getCookie(name): string | undefined
+  clearCookie(name, options?): this
+  deleteCookie(name, options?): void
+
+  throw(status: HttpStatus, options?): this
+}
+```
+
+Inherited from `Context`: `state`, `setState()`, `error`, `emit()`, `call()`, `on()`,
+`once()`, `off()`.
+
+<Aside type="caution" title="Not implemented yet">
+  `sse()` currently returns the context without opening a stream, and `jsonp()` is a
+  pass-through. Do not build on them yet.
+</Aside>
+
+## `HttpCore`
+
+The application object you get back from `connectTo()`. It mirrors the shape of a
+familiar web framework's app instance.
+
+```ts
+class HttpCore<TServer, TApp, TRequest, TResponse> {
+  constructor(adapter: HttpServerAdapter<...>, options?: HttpApplicationOptions)
+
+  get broker(): HttpEventCore<HttpGlandEvents>
+  get id(): string
+
+  listen(port: number, args?: { host?: string; message?: string }): void
+  use(...args: any[]): void
+
+  get(path, action): this
+  post(path, action): this
+  put(path, action): this
+  patch(path, action): this
+  delete(path, action): this
+  head(path, action): this
+  options(path, action): this
+  all(path, action): this
+  search(path, action): this
+  propfind(path, action): this
+  proppatch(path, action): this
+  mkcol(path, action): this
+  copy(path, action): this
+  move(path, action): this
+  lock(path, action): this
+  unlock(path, action): this
+
+  json(options?): this
+  urlencoded(options?: { extended?: boolean }): this
+  raw(options?): this
+  text(options?): this
+
+  enableCors(options: CorsConfig): void
+  setGlobalPrefix(prefix: string): void
+  useStaticAssets(path: string): void
+  setViewEngine(engine: string): this
+  setBaseViewsDir(path: string | string[]): this
+  handleError(error: unknown, message: string): void
+}
+```
+
+```ts
+const server = app.connectTo(ExpressBroker)
+
+server.use((ctx, next) => { ctx.state.t0 = Date.now(); return next() })
+server.useStaticAssets('public')
+server.setGlobalPrefix('/api')
+server.enableCors({ origin: '*' })
+server.json()
+server.listen(3000, { host: '0.0.0.0', message: 'ready' })
+```
+
+## `HttpBroker`
+
+Bridges core's route events to the application object.
+
+```ts
+class HttpBroker<TEvents, TApp, TOptions> extends BrokerAdapter<TEvents, TApp, TOptions> {
+  constructor(instance: TApp, options?: TOptions)
+  initialize(): TApp
+}
+```
+
+`initialize()` subscribes to `gland:define:route` and calls
+`app[payload.method.toLowerCase()](payload.meta.path, payload.action)` for each
+discovered route. Concrete adapters extend it and supply the instance:
+
+```ts
+export class ExpressBroker<TEvents extends EventRecord> extends HttpBroker<
+  TEvents, ExpressCore<TEvents>, HttpApplicationOptions
+> {
+  constructor(options?: HttpApplicationOptions) {
+    super(new ExpressCore<TEvents>(options), options)
+  }
+}
+```
+
+## `HttpServerAdapter`
+
+The abstract adapter every transport implements.
+
+```ts
+abstract class HttpServerAdapter<TServer, TApp, TRequest, TResponse> {
+  constructor(public instance: TApp)
+  events: HttpEventCore<HttpGlandEvents>
+
+  abstract initialize(): Promise<void> | void
+  abstract listen(port: string | number, hostname?: string, message?: string): void
+  abstract use(...args: any): any
+  abstract registerRoute(method: string, path: string, action: RouteAction): void
+  abstract enableCors(options: CorsConfig): void
+  abstract setViewEngine(engine: string): this
+  abstract setBaseViewsDir(path: string | string[]): this
+  abstract setGlobalPrefix(prefix: string): void
+  abstract useStaticAssets(path: string, options?: any): void
+  abstract json(options?: any): this
+  abstract urlencoded(options?: { extended?: boolean }): this
+  abstract raw(options?: any): this
+  abstract text(options?: any): this
+
+  close(): Promise<void>
+  handleError(error: any, message: string): void   // emits 'server:crashed', then rethrows
+}
+```
+
+## `HttpEventCore`
+
+An `EventBroker` with one addition.
+
+```ts
+class HttpEventCore<TEvents extends EventRecord> extends EventBroker<TEvents> {
+  safeEmit<K>(event: K, payload: TEvents[K]): boolean
+}
+```
+
+`safeEmit` returns `false` when nothing was listening, instead of throwing — used for
+internal events such as `server:crashed` where "nobody cares" is not an error.
+
+## `ServerFactory`
+
+```ts
+class ServerFactory {
+  static create(options?: HttpApplicationOptions, listener?: RequestListener): Server
+}
+```
+
+Returns an `http` or `https` server depending on `options.https`.
+
+## Options
+
+```ts
+interface HttpApplicationOptions {
+  https?: HttpsOptions
+}
+
+interface HttpsOptions {
+  key?: any; cert?: any; ca?: any; pfx?: any; passphrase?: string
+  ciphers?: string; honorCipherOrder?: boolean
+  requestCert?: boolean; rejectUnauthorized?: boolean
+  SNICallback?: (servername: string, cb: (err: Error, ctx: any) => any) => any
+  secureOptions?: number
+  // …
+}
+```
+
+```ts
+const server = app.connectTo(ExpressBroker, {
+  https: { key: readFileSync('key.pem'), cert: readFileSync('cert.pem') },
+})
+```
+
+## CORS
+
+```ts
+interface CorsOptions {
+  origin?: StaticOrigin | CustomOrigin                    // @default '*'
+  methods?: string | string[]                             // @default 'GET,HEAD,PUT,PATCH,POST,DELETE'
+  allowedHeaders?: string | string[]
+  exposedHeaders?: string | string[]
+  credentials?: boolean                                   // @default false
+  maxAge?: number
+  preflightContinue?: boolean                             // @default false
+  optionsSuccessStatus?: number                           // @default 204
+}
+
+type CorsConfig = boolean | CorsOptions | CorsOptionsDelegate<IncomingMessage>
+```
+
+<Aside type="caution">
+  The `cors` package is loaded lazily and is **not** a dependency of
+  `@glandjs/express`. Install it before calling `enableCors()`.
+</Aside>
+
+```bash
+pnpm add cors
+```
+
+## Cookies and options
+
+```ts
+interface CookieOptions {
+  maxAge?: number; name?: string; secret?: string
+  path?: string; domain?: string
+  sameSite?: 'strict' | 'lax' | 'none' | boolean
+  secure?: boolean; secureProxy?: boolean; httpOnly?: boolean
+  signed?: boolean; overwrite?: boolean; expires?: Date
+}
+```
+
+```ts
+interface SendOptions {
+  acceptRanges?: boolean; cacheControl?: boolean
+  dotfiles?: 'allow' | 'deny' | 'ignore'
+  end?: number; etag?: boolean
+  extensions?: string[] | string | boolean
+  immutable?: boolean
+  index?: string[] | string | boolean
+  lastModified?: boolean; maxAge?: string | number
+  root?: string; start?: number
+}
+```
+
+## Types
+
+`RouteAction` and the CORS types are not re-exported from the package root. Import
+them from the subpath:
+
+```ts
+import type { RouteAction, CorsConfig, StaticOrigin } from '@glandjs/http/types'
+```
+
+```ts
+type RouteAction<TRequest, TResponse> =
+  (ctx: HttpContext<TRequest, TResponse>) => any | Promise<any>
+```
+
+## Framework events
+
+```ts
+interface HttpGlandEvents {
+  options?: HttpApplicationOptions
+  'server:crashed': { message: string; error: any; stack: any }
+}
+```
+
+Subscribe to `server:crashed` to log transport failures centrally:
+
+```ts
+server.broker.on('server:crashed', ({ message, error }) => {
+  logger.error({ message, error }, 'http server error')
+})
+```

@@ -1,0 +1,166 @@
+---
+title: Architecture
+description: What happens between GlandFactory.create() and a listening server — the full bootstrap sequence, and the event names behind it.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Understanding the bootstrap is the fastest way to predict Gland's behaviour, because
+almost every surprise at startup comes from one of these seven steps running in a
+different order than you expected.
+
+## The bootstrap sequence
+
+`GlandFactory.create(AppModule)` runs this pipeline. Each step logs when
+`GLAND_DEBUG` is set.
+
+```text
+1. Scanning module dependencies      walk @Module({ imports }) recursively
+2. Initializing dependency injector  instantiate controllers + channels, resolve ctor params
+3. Running module initialization      onModuleInit()   (modules, controllers, channels)
+4. Binding application components    channels subscribe, then routes are broadcast
+5. Running channel init hooks        onChannelInit()
+6. Bootstrapping application         onAppBootstrap()
+7. Application initialized
+```
+
+<Aside type="caution" title="Order matters for side effects">
+  `onModuleInit` runs **before** channels are bound. If you need to talk to a
+  channel, do it in `onChannelInit` or later — that is the first hook that runs once
+  every channel is reachable.
+</Aside>
+
+## Layer by layer
+
+```text
+                 ┌───────────────────────────────────────────┐
+   transport     │  Broker          ExpressBroker, …        │
+                 │  builds a Context per interaction         │
+                 └───────────────────┬───────────────────────┘
+                                     │  GlandRoute
+                 ┌───────────────────▼───────────────────────┐
+   routing       │  Controller      @Get, @Post, @Channel …  │
+                 │  emits / calls an event, then replies    │
+                 └───────────────────┬───────────────────────┘
+                                     │  'product:list'
+                 ┌───────────────────▼───────────────────────┐
+   domain        │  Channel         @Channel / @On handlers   │
+                 │  performs the side effect, returns a value│
+                 └───────────────────────────────────────────┘
+
+   underneath everything:  EventBroker  (namespaces, channels, mesh, watchers)
+   underneath that:         EventEmitter (tree routing, wildcards, LRU cache)
+```
+
+## The two event flows
+
+Gland uses the event system for two very different things, and they are worth telling
+apart.
+
+### Framework events
+
+Internal, prefixed with `gland:`, used by the runtime to talk to adapters. You only
+see them if you write a [custom broker](/guides/protocol-brokers).
+
+| Event | Payload | Emitted when |
+| --- | --- | --- |
+| `gland:define:route` | `GlandRoute` | A controller route is discovered and bound. |
+| `gland:define:channel:<ns>:<event>` | the payload | A channel handler is bound. |
+
+### Application events
+
+Yours. Declared in a typed map, addressed by `namespace:event`, and the only kind a
+controller or channel ever references.
+
+```ts title="src/shared/events.interface.ts"
+import { IOEvent } from '@glandjs/events'
+
+export interface EventTypes {
+  // Fire-and-forget: the return type is void.
+  'product:viewed': { id: string }
+
+  // Request/response: `ctx.call()` gets a typed `Product` back.
+  'product:list': IOEvent<Record<string, never>, Promise<Product[]>>
+  'product:create': IOEvent<NewProduct, Promise<Product>>
+}
+```
+
+The `IOEvent<Payload, Return>` wrapper is what makes a channel handler's return value
+flow back into the controller with a type, instead of `any`.
+
+## How an event name is resolved
+
+Channel names are global. At bind time the framework builds a frozen registry that
+maps every public name to its internal event name:
+
+```text
+@Channel('product') + @On('list')  ->  'product:list'  ->  'gland:define:channel:product:list'
+```
+
+Each request's context carries a reference to that frozen registry, so
+`ctx.call('product:list', …)` is a single object lookup — not a scan over discovered
+channels. Calling an unregistered name throws an `UnknownEventError` that lists the
+names you *can* use.
+
+```ts
+import { UnknownEventError } from '@glandjs/core'
+
+try {
+  ctx.call('product:lst', {})
+} catch (error) {
+  if (error instanceof UnknownEventError) {
+    console.error(error.event)     // 'product:lst'
+    console.error(error.available) // every valid channel event
+  }
+}
+```
+
+## Broker attachment
+
+`connectTo()` is the seam between the transport-agnostic core and a concrete protocol.
+
+```ts
+const app = await GlandFactory.create(AppModule)
+const server = app.connectTo(ExpressBroker)
+```
+
+Three things happen, in order:
+
+1. `new ExpressBroker(options)` — the adapter builds its own broker and application
+   object.
+2. The adapter's broker is connected to the core broker, so `gland:define:route`
+   events cross between them.
+3. `adapter.initialize()` runs, subscribing to route definitions and returning the
+   application object you now hold.
+
+<Aside type="note">
+  `connectTo` is typed to return the adapter's application, so the object you get
+  back is the real Express application with the full `HttpCore` surface —
+  `json()`, `use()`, `useStaticAssets()`, `setGlobalPrefix()` and so on.
+</Aside>
+
+## Reading the debug output
+
+Set `GLAND_DEBUG` to see each bootstrap step as it happens:
+
+```bash title="Terminal"
+GLAND_DEBUG=1 node dist/main.js
+```
+
+The HTTP layer adds its own context tags, so you can also see
+`HTTP:Adapter`, `HTTP:Server` and bound routes and channels:
+
+```text
+[GLAND] Scanning module dependencies
+[GLAND] Initializing dependency injector
+[GLAND] Running module initialization hooks
+[GLAND] Binding application components
+[GLAND] Channel bound: "product:list" -> ProductChannel#list
+[GLAND] Route bound: [GET] /products -> ProductController#list
+[GLAND] Running channel initialization hooks
+[GLAND] Bootstrapping application
+[GLAND] Application initialized successfully
+[HTTP:Adapter] Initializing Express adapter
+[HTTP:Server] Initializing HTTP server...
+```

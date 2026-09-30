@@ -1,0 +1,163 @@
+# PSX configuration for the Gland documentation site.
+# https://github.com/m-mdy-m/psx
+version: 1
+
+project:
+  type: "nodejs"
+
+rules:
+  # ── General ─────────────────────────────────────────────────────
+  readme: error
+  license: error
+  gitignore: error
+  changelog: info
+  package_manager: error
+
+  # ── Structure ──────────────────────────────────────────────────
+  src_folder: error
+  tests_folder: false
+  docs_folder: false # the site *is* the docs; no separate docs/ tree
+  scripts_folder: false
+
+  # ── Documentation ──────────────────────────────────────────────
+  adr: false
+  contributing: error
+  api_docs: false # API reference lives in src/content/docs/packages
+  security: info
+  code_of_conduct: info
+  pull_request_template: error
+  issue_templates: error
+
+  # ── CI/CD ──────────────────────────────────────────────────────
+  ci_config: error
+
+  # ── Quality ────────────────────────────────────────────────────
+  pre_commit: false
+  editorconfig: error
+  code_owners: info
+
+  # ── DevOps ─────────────────────────────────────────────────────
+  dockerfile: false
+  dockerignore: false
+  docker_compose: false
+
+ignore:
+  - node_modules/
+  - dist/
+  - .astro/
+  - .git/
+  - public/
+  - pnpm-lock.yaml
+  - .psx-project.yml
+
+custom:
+  folders:
+    # Astro + Starlight source tree
+    - path: "src"
+      structure:
+        assets: {}
+        components:
+          home: {}
+        content:
+          docs:
+            changelog: {}
+            documentation: {}
+            fundamentals: {}
+            getting-started: {}
+            guides: {}
+            introduction: {}
+            packages: {}
+        data: {}
+        styles: {}
+
+    # GitHub templates & workflows
+    - path: ".github/ISSUE_TEMPLATE"
+      structure:
+        bug_report: {}
+        documentation_improvement: {}
+        feature_request: {}
+        config: {}
+    - path: ".github/workflows"
+      structure:
+        deploy: {}
+
+  files:
+    # Root
+    - path: "/psx.yml"
+    - path: "/.psx-project.yml"
+    - path: "/.gix/config"
+    - path: "/README.md"
+    - path: "/CHANGELOG.md"
+    - path: "/LICENSE"
+    - path: "/CODE_OF_CONDUCT.md"
+    - path: "/CONTRIBUTING.md"
+    - path: "/SECURITY.md"
+    - path: "/CODEOWNERS"
+    - path: "/package.json"
+    - path: "/pnpm-lock.yaml"
+    - path: "/pnpm-workspace.yaml"
+    - path: "/astro.config.mjs"
+    - path: "/ec.config.mjs"
+    - path: "/tsconfig.json"
+    - path: "/.editorconfig"
+    - path: "/.gitignore"
+    - path: "/.nvmrc"
+
+    # Astro config
+    - path: "/src/content.config.ts"
+    - path: "/src/styles/global.css"
+    - path: "/src/data/sidebar.mjs"
+    - path: "/src/data/packages.mjs"
+
+    # Starlight component overrides
+    - path: "/src/components/Head.astro"
+    - path: "/src/components/ThemeProvider.astro"
+    - path: "/src/components/Header.astro"
+    - path: "/src/components/PageTitle.astro"
+    - path: "/src/components/ContentPanel.astro"
+    - path: "/src/components/Footer.astro"
+    - path: "/src/components/FeatureGrid.astro"
+    - path: "/src/components/PackageCard.astro"
+    - path: "/src/components/PackageGrid.astro"
+    - path: "/src/components/Pillars.astro"
+
+    # Brand assets
+    - path: "/src/assets/gland-logo.svg"
+
+    # Content
+    - path: "/src/content/docs/index.mdx"
+    - path: "/src/content/docs/documentation/index.mdx"
+    - path: "/src/content/docs/faq.mdx"
+    - path: "/src/content/docs/introduction/what-is-gland.mdx"
+    - path: "/src/content/docs/introduction/why-gland.mdx"
+    - path: "/src/content/docs/introduction/architecture.mdx"
+    - path: "/src/content/docs/getting-started/installation.mdx"
+    - path: "/src/content/docs/getting-started/first-steps.mdx"
+    - path: "/src/content/docs/getting-started/working-with-the-context.mdx"
+    - path: "/src/content/docs/fundamentals/modules.mdx"
+    - path: "/src/content/docs/fundamentals/controllers.mdx"
+    - path: "/src/content/docs/fundamentals/channels.mdx"
+    - path: "/src/content/docs/fundamentals/dependency-injection.mdx"
+    - path: "/src/content/docs/fundamentals/lifecycle-events.mdx"
+    - path: "/src/content/docs/packages/core.mdx"
+    - path: "/src/content/docs/packages/common.mdx"
+    - path: "/src/content/docs/packages/events.mdx"
+    - path: "/src/content/docs/packages/emitter.mdx"
+    - path: "/src/content/docs/packages/http.mdx"
+    - path: "/src/content/docs/packages/express.mdx"
+    - path: "/src/content/docs/guides/protocol-brokers.mdx"
+    - path: "/src/content/docs/guides/testing.mdx"
+    - path: "/src/content/docs/guides/performance.mdx"
+    - path: "/src/content/docs/changelog/emitter.mdx"
+    - path: "/src/content/docs/changelog/events.mdx"
+    - path: "/src/content/docs/changelog/gland.mdx"
+    - path: "/src/content/docs/changelog/http.mdx"
+
+    # GitHub
+    - path: "/.github/dependabot.yml"
+    - path: "/.github/PULL_REQUEST_TEMPLATE.md"
+    - path: "/.github/ISSUE_TEMPLATE/bug_report.yml"
+    - path: "/.github/ISSUE_TEMPLATE/documentation_improvement.yml"
+    - path: "/.github/ISSUE_TEMPLATE/feature_request.yml"
+    - path: "/.github/ISSUE_TEMPLATE/config.yml"
+    - path: "/.github/workflows/deploy.yml"

@@ -1,0 +1,260 @@
+---
+title: Testing
+description: How to test controllers, channels and the application graph without booting a server.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Event-driven architecture pays off most in tests. Because a controller's only job is
+to emit and a channel's only job is to react, both can be exercised in isolation — no
+HTTP server, no sockets, no mocks of your own domain.
+
+## Testing a channel
+
+A channel is a plain class. Instantiate it and call the handler.
+
+```ts title="test/product.channel.spec.ts"
+import { describe, expect, it } from 'vitest'
+import { ProductChannel } from '../src/modules/product/product.channel'
+
+describe('ProductChannel', () => {
+  it('records a view', () => {
+    const channel = new ProductChannel()
+    const sink = { write: vi.fn() }
+
+    channel.onViewed({ id: 'p-1', sink })
+
+    expect(sink.write).toHaveBeenCalledWith({ id: 'p-1' })
+  })
+})
+```
+
+If the channel has constructor dependencies, pass fakes.
+
+```ts
+const channel = new ProductChannel(fakeRepository, fakeMailer)
+```
+
+<Aside type="tip" title="A channel needs no Gland at all">
+  Because channels are ordinary classes with ordinary methods, your unit tests do not
+  import the framework, do not need `reflect-metadata`, and run in microseconds.
+</Aside>
+
+## Testing a controller
+
+A controller test asserts what the controller **emitted**, not what it returned. This
+is the pattern that makes Gland controllers cheap to verify.
+
+```ts title="test/product.controller.spec.ts"
+import { describe, expect, it, vi } from 'vitest'
+import { ProductController } from '../src/modules/product/product.controller'
+
+function fakeContext(overrides = {}) {
+  return {
+    call: vi.fn().mockResolvedValue([]),
+    emit: vi.fn(),
+    send: vi.fn(function (this: any, data: unknown) {
+      return this
+    }),
+    params: {},
+    body: {},
+    ...overrides,
+  }
+}
+
+describe('ProductController', () => {
+  it('asks the db channel for the product list', async () => {
+    const ctx = fakeContext()
+
+    await new ProductController().list(ctx as any)
+
+    expect(ctx.call).toHaveBeenCalledWith('db:product:all', {})
+    expect(ctx.send).toHaveBeenCalledWith({ products: [] })
+  })
+
+  it('emits product:viewed without waiting for it', async () => {
+    const ctx = fakeContext({ params: { id: 'p-1' } })
+
+    await new ProductController().getOne(ctx as any)
+
+    expect(ctx.emit).toHaveBeenCalledWith('product:viewed', { id: 'p-1' })
+  })
+
+  it('rejects an invalid payload with 400', async () => {
+    const ctx = fakeContext({ body: { name: 'Keyboard' } })   // no price
+
+    await new ProductController().create(ctx as any)
+
+    expect(ctx.send).toHaveBeenCalledWith(
+      { error: '`name` and `price` are required' },
+      400,
+    )
+    expect(ctx.call).not.toHaveBeenCalled()
+  })
+})
+```
+
+A small `fakeContext` helper shared across your suite pays for itself immediately.
+
+```ts title="test/helpers.ts"
+import { vi } from 'vitest'
+
+export function fakeContext<T = any>(overrides: Partial<T> = {}): any {
+  const chainable = () => chainable
+  return {
+    call: vi.fn(),
+    emit: vi.fn(chainable),
+    on: vi.fn(chainable),
+    once: vi.fn(chainable),
+    off: vi.fn(chainable),
+    setState: vi.fn(chainable),
+    send: vi.fn(chainable),
+    json: vi.fn(chainable),
+    status: vi.fn(chainable),
+    throw: vi.fn(),
+    params: {},
+    query: {},
+    body: {},
+    state: {},
+    ...overrides,
+  }
+}
+```
+
+## Testing the wiring
+
+A unit test proves each piece works. A wiring test proves the pieces are connected —
+that `@Controller('products')` plus `@Get(':id')` really produces
+`GET /products/:id`, and that a channel's `@On` really lands in the registry.
+
+```ts title="test/wiring.spec.ts"
+import { Container, Explorer, DiscoveryService } from '@glandjs/core'
+import { AppModule } from '../src/app.module'
+
+async function buildApp() {
+  const container = new Container()
+  await container.register(AppModule)
+  return { container, explorer: new Explorer(container.moduleContainer) }
+}
+
+describe('module wiring', () => {
+  it('discovers every controller route', async () => {
+    const { explorer } = await buildApp()
+
+    const routes = explorer
+      .exploreControllers()
+      .map((r) => `${r.method} ${r.controller.path}${r.route === '/' ? '' : r.route}`)
+
+    expect(routes).toContain('GET /products')
+    expect(routes).toContain('GET /products/:id')
+    expect(routes).toContain('POST /products')
+  })
+
+  it('registers each channel handler once', async () => {
+    const { container } = await buildApp()
+    const channels = new DiscoveryService(container.moduleContainer).getChannels()
+
+    expect(channels.length).toBeGreaterThan(0)
+    expect(new Set(channels.map((c) => c.id)).size).toBe(channels.length)
+  })
+})
+```
+
+## End-to-end tests
+
+For full coverage, boot the real application and drive it over HTTP.
+
+```ts title="test/api.e2e-spec.ts"
+import { beforeAll, afterAll, describe, expect, it } from 'vitest'
+import { GlandFactory } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express'
+import { AppModule } from '../src/app.module'
+
+let server: any
+
+beforeAll(async () => {
+  const app = await GlandFactory.create(AppModule)
+  server = app.connectTo(ExpressBroker)
+  server.json()
+  await new Promise<void>((resolve) => server.listen(0, resolve))
+})
+
+afterAll(async () => {
+  await server.close()
+})
+
+describe('POST /products', () => {
+  it('creates and reads back a product', async () => {
+    const base = `http://localhost:${server.address().port}`
+
+    const created = await fetch(`${base}/products`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Keyboard', price: 89, stock: 12 }),
+    })
+    expect(created.status).toBe(201)
+
+    const { product } = await created.json()
+    expect(product.name).toBe('Keyboard')
+
+    const listed = await fetch(`${base}/products`).then((r) => r.json())
+    expect(listed.products).toHaveLength(1)
+  })
+})
+```
+
+<Aside type="caution" title="Port 0, not 3000">
+  Ask the OS for a free port with `listen(0)` and read it back from
+  `server.address().port`. A hard-coded port makes parallel test runs flaky.
+</Aside>
+
+## Waiting for events
+
+For asserting on fire-and-forget emissions, use the broker's `watch`.
+
+```ts
+const broker = new EventBroker({ name: 'test' })
+
+const emitted = broker.watch('product:viewed', 1_000)
+broker.emit('product:viewed', { id: 'p-1' })
+
+await expect(emitted).resolves.toEqual({ id: 'p-1' })
+```
+
+Or assert with `once` when you need the return value:
+
+```ts
+const handled = broker.once('product:viewed', null, { watch: true, timeout: 1_000 })
+broker.emit('product:viewed', { id: 'p-1' })
+
+await expect(handled).resolves.toMatchObject({ id: 'p-1' })
+```
+
+Always set a timeout. A `watch` that never resolves is a hanging test, not a failing
+one.
+
+## Running the lifecycle by hand
+
+`onChannelInit()` is the first hook at which channels are reachable — useful when a
+test needs a warmed-up channel without a full bootstrap.
+
+```ts
+import { LifecycleScanner } from '@glandjs/core'
+
+const scanner = new LifecycleScanner(container.moduleContainer)
+scanner.scanForHooks()
+await scanner.onChannelInit()
+```
+
+## What not to test
+
+- **The framework.** `@Get` producing a route, `@Inject` resolving a class — these
+  are the framework's job, and a test of them will only break when you upgrade.
+- **Express.** That `ctx.send` writes a body is a guarantee of the adapter, not of
+  your application.
+- **Return types.** The compiler already checks them. A test that asserts a string is
+  a string is noise.
+
+Test what your application *decides*: which events a controller emits, what a channel
+does with them, and how the graph is wired.

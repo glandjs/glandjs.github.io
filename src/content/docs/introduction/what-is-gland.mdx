@@ -1,0 +1,145 @@
+---
+title: What is Gland?
+description: Gland is an event-first, protocol-agnostic framework for Node.js. It separates business intent from transport mechanics using four small primitives.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Gland is an event-first, **protocol-agnostic** framework for building server-side
+applications in TypeScript and JavaScript. Its central premise is to treat domain
+behaviour as composable events rather than as monolithic request handlers, so that
+business intent stays separate from transport mechanics.
+
+The framework keeps its core deliberately small. There are four ideas to learn, and
+everything else in the ecosystem is built out of them.
+
+## The four primitives
+
+| Primitive | Responsibility |
+| --- | --- |
+| **Module** | A composition boundary that registers controllers, channels and other modules. |
+| **Controller** | Receives an interaction, emits well-scoped domain events. Holds no side effects. |
+| **Channel** | Subscribes to events and performs side effects: persistence, responses, outbound calls. |
+| **Broker** | A protocol adapter that bridges an external transport to the event system. |
+
+<Aside type="note" title="No magic">
+  Gland discovers your application by reading decorator metadata. There is no
+  convention-based guessing, no file-name scanning and no implicit global registry.
+  If it runs, you declared it.
+</Aside>
+
+## A complete application
+
+Four files, one HTTP endpoint. This is the shape of every Gland application.
+
+**`src/product.channel.ts`** — the side effect lives here.
+
+```ts title="src/product.channel.ts" ins={6}
+import { Channel, On } from '@glandjs/common'
+
+@Channel('product')
+export class ProductChannel {
+  private products = new Map<string, { id: string; name: string }>()
+
+  @On('list')
+  list() {
+    return Array.from(this.products.values())
+  }
+}
+```
+
+**`src/product.controller.ts`** — the controller only translates and emits.
+
+```ts title="src/product.controller.ts"
+import { Controller } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+import type { ExpressContext } from '@glandjs/express'
+
+@Controller('products')
+export class ProductController {
+  @Get()
+  list(ctx: ExpressContext) {
+    return ctx.send(await ctx.call('product:list', {}))
+  }
+}
+```
+
+**`src/app.module.ts`** — wiring.
+
+```ts title="src/app.module.ts"
+import { Module } from '@glandjs/common'
+import { ProductController } from './product.controller'
+import { ProductChannel } from './product.channel'
+
+@Module({
+  controllers: [ProductController],
+  channels: [ProductChannel],
+})
+export class AppModule {}
+```
+
+**`src/main.ts`** — bootstrap and attach a transport.
+
+```ts title="src/main.ts" ins={6}
+import { GlandFactory } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express'
+import { AppModule } from './app.module'
+
+async function bootstrap() {
+  const app = await GlandFactory.create(AppModule)
+  const server = app.connectTo(ExpressBroker)
+  server.json()
+  server.listen(3000)
+}
+
+void bootstrap()
+```
+
+`GlandFactory.create()` scans the module graph, instantiates everything, runs the
+lifecycle hooks and binds discovered routes and channels. `connectTo()` attaches a
+protocol broker and hands you back the transport application object.
+
+## How a request flows
+
+1. A broker receives a transport signal and builds a **context** object for it.
+2. The router matches the context to a **controller** method.
+3. The controller calls `ctx.emit(...)` for fire-and-forget work, or `ctx.call(...)`
+   when it needs a result back, and then replies with `ctx.send(...)`.
+4. The event is resolved to a **channel** handler through the channel registry and
+   invoked with the payload.
+5. The handler's return value travels back to the controller for `ctx.call()`.
+
+The controller never learns which class handled the event, and the channel never
+learns which transport triggered it.
+
+## Why events instead of method calls
+
+Calling a service directly from a controller is the shortest possible path, and it is
+the one that hurts the most later. It couples HTTP to your domain, it hides side
+effects, and it makes the interesting question — *what actually happened?* — impossible
+to answer in a test.
+
+Routing interaction through events inverts the dependency. The controller states an
+intent; a channel decides how to satisfy it. From that you get, for free:
+
+- **Replaceable side effects.** Swap the persistence channel for an HTTP one and the
+  controller is untouched.
+- **Cheap tests.** Assert that a controller emitted `product:list`. Call the channel
+  with a fake context. No server, no network.
+- **Fan-out.** Several channels can answer the same event without the controller
+  knowing they exist.
+- **One domain, many transports.** The same modules run under any broker.
+
+<Aside type="tip" title="Gland is not an HTTP framework">
+  `@glandjs/core` knows nothing about requests or responses. If you never attach a
+  broker you get a perfectly working event-driven application with no network surface
+  at all — which is exactly how you unit-test it.
+</Aside>
+
+## Where to go next
+
+- [Why Gland?](/introduction/why-gland) — the trade-offs, stated plainly.
+- [Architecture](/introduction/architecture) — how a bootstrap actually flows.
+- [Installation](/getting-started/installation) — get it running in a minute.
+- [First steps](/getting-started/first-steps) — build the example above, for real.

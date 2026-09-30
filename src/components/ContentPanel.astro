@@ -1,1 +1,12 @@
- <slot />
+---
+/**
+ * Wraps a page's markdown body. Kept as a component so the max measure and the
+ * vertical rhythm live in one place (see `src/styles/global.css`).
+ */
+---
+
+<div class="content-panel">
+  <div class="sl-container">
+    <slot />
+  </div>
+</div>

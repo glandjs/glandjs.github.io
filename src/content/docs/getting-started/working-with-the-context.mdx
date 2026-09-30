@@ -1,0 +1,234 @@
+---
+title: Working with the context
+description: The Context object — reading the request, sending responses, sharing state, and calling channels.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Every controller handler receives one argument: the **context**. It wraps the
+underlying request/response pair, adds Gland's event methods, and carries a small state
+bag for the lifetime of a single interaction.
+
+For HTTP that type is `ExpressContext<TEvents>`, which extends `HttpContext` and
+ultimately `Context` from `@glandjs/core`.
+
+```ts
+import type { ExpressContext } from '@glandjs/express'
+import type { EventTypes } from './shared/events.interface'
+
+async function handler(ctx: ExpressContext<EventTypes>) {
+  // ctx is fully typed from here on.
+}
+```
+
+## Reading the request
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `body` | `any` | The parsed request body. Requires `server.json()` or `server.urlencoded()`. |
+| `params` | `Record<string, string>` | Path parameters from the route, e.g. `:id`. |
+| `query` | `Record<string, string \| string[] \| undefined>` | Parsed query string. |
+| `headers` | `Record<string, string \| string[]>` | Request headers. |
+| `method` | `RequestMethod` | The request method. |
+| `path` | `string` | The request path. |
+| `url` / `originalUrl` | `string` | Full URL, with and without the global prefix. |
+| `hostname` | `string` | Host header. |
+| `host` | `string \| undefined` | Convenience alias for the host. |
+| `ip` | `string \| undefined` | Client IP. |
+| `protocol` | `string` | `http` or `https`. |
+| `secure` | `boolean` | Whether the connection is TLS. |
+| `xhr` | `boolean` | Whether the `X-Requested-With` header is set. |
+| `stale` / `fresh` | `boolean` | Cache validators from `If-Modified-Since` / `If-None-Match`. |
+| `subdomains` | `string[]` | Subdomains of the host. |
+| `cookies` | `Record<string, string>` | Parsed cookies. |
+| `accepts` | `(types?) => string \| false` | Content negotiation. |
+| `is` | `(type) => string \| false \| null` | Check a `Content-Type`. |
+
+### Path parameters
+
+Declare them in the route with a leading colon and read them from `ctx.params`.
+
+```ts
+@Controller('products')
+export class ProductController {
+  @Get(':category/:id')
+  getOne(ctx: ExpressContext<EventTypes>) {
+    const { category, id } = ctx.params
+    return ctx.send({ category, id })
+  }
+}
+```
+
+## Sending a response
+
+Every reply method is chainable and returns the context.
+
+| Method | Result |
+| --- | --- |
+| `send(data, statusCode?, headers?)` | Generic reply — the adapter picks the encoding. |
+| `json(data, statusCode?, headers?)` | `application/json` |
+| `html(html, statusCode?, headers?)` | `text/html` |
+| `text(text, statusCode?, headers?)` | `text/plain` |
+| `xml(xml, statusCode?, headers?)` | `application/xml` |
+| `status(code)` | Set the status code without sending. |
+| `redirect(url)` | Send a redirect. |
+| `end()` | End the response with no body. |
+| `location(url)` | Set the `Location` header. |
+| `attachment(filename?)` | Set `Content-Disposition`. |
+| `vary(field)` | Append to the `Vary` header. |
+
+```ts
+@Get()
+list(ctx: ExpressContext<EventTypes>) {
+  ctx.status(200)
+  return ctx.json({ products: [] }, 200, { 'cache-control': 'no-store' })
+}
+```
+
+<Aside type="tip" title="Return the context">
+  Returning `ctx.send(...)` is optional but makes the flow explicit and keeps every
+  branch type-checked. If a handler returns a plain value, the adapter replies with
+  it automatically.
+</Aside>
+
+### Status codes
+
+```ts
+return ctx.send({ error: 'Not found' }, 404)
+return ctx.send({ product }, 201)
+return ctx.send({ error: 'Invalid payload' }, 422)
+```
+
+### Cookies
+
+```ts
+ctx.setCookie('session', token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: 'lax',
+  maxAge: 60 * 60 * 1000,
+})
+
+const token = ctx.getCookie('session')
+ctx.clearCookie('session')
+```
+
+### Headers
+
+```ts
+ctx.setHeader('x-request-id', id)
+ctx.setHeaders({ 'x-a': '1', 'x-b': '2' })
+ctx.removeHeader('x-request-id')
+const value = ctx.getHeader('x-request-id')
+const has = ctx.hasHeader('x-request-id')
+```
+
+## Sharing state
+
+`ctx.state` is a plain object scoped to a single interaction. Assigning to it merges,
+it never replaces — so a middleware and a handler can each add to it safely.
+
+```ts
+// somewhere early
+ctx.state.requestId = crypto.randomUUID()
+
+// later, in the same interaction
+ctx.state.userId = user.id
+
+// read it all
+const { requestId, userId } = ctx.state
+```
+
+`setState()` is the chainable equivalent:
+
+```ts
+ctx.setState({ requestId }).setState({ userId })
+```
+
+<Aside type="note">
+  State does not cross interaction boundaries. If two users hit your server at the
+  same time, they get two contexts and two state bags.
+</Aside>
+
+## Talking to channels
+
+### `ctx.call()` — request/response
+
+```ts
+const products = await ctx.call('db:product:all', {})
+```
+
+The return type comes from `IOEvent<Payload, Return>`. Pass `'all'` as a third
+argument to collect every matching handler's return value:
+
+```ts
+const results = await ctx.call('audit:record', payload, 'all')
+//    ^? EventReturn<...>[]
+```
+
+### `ctx.emit()` — fire and forget
+
+```ts
+ctx.emit('product:viewed', { id })
+```
+
+Returns the context, so it chains. The handler runs synchronously but you do not
+observe its result.
+
+### Unknown event names
+
+Calling an event that no channel registered throws an `UnknownEventError` that lists
+the valid names:
+
+```ts
+import { UnknownEventError } from '@glandjs/core'
+
+try {
+  ctx.call('db:prodcut:all', {})
+} catch (error) {
+  if (error instanceof UnknownEventError) {
+    console.error(error.event)     // what you asked for
+    console.error(error.available) // what you can ask for
+  }
+}
+```
+
+## Low-level event methods
+
+`Context` also exposes `on`, `once` and `off`. These operate on raw broker events and
+are intended for framework-level observation, not for reaching channel handlers —
+for that, use `emit` and `call`.
+
+```ts
+// Watch for a framework event without a listener
+const route = await ctx.on('gland:define:route', null, { watch: true, timeout: 1000 })
+```
+
+## Errors
+
+`ctx.error` is populated by the adapter when a handler throws, and `throw()` creates a
+status-aware exception.
+
+```ts
+import { HttpStatus } from '@glandjs/http'
+
+if (!product) {
+  return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Product not found' })
+}
+```
+
+Adapter-level failures are surfaced through the broker's `server:crashed` event, so
+you can log them centrally rather than wrapping every route.
+
+`ctx.throw()` takes an `HttpStatus`, which is re-exported by `@medishn/toolkit`
+rather than by Gland. If you prefer to avoid that extra import, pass the numeric
+status code — the exception carries it either way.
+
+```ts
+import { HttpStatus } from '@medishn/toolkit'
+
+if (!product) {
+  return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Product not found' })
+}
+```

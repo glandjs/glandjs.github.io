@@ -1,0 +1,75 @@
+---
+/**
+ * Custom page footer (Starlight `Footer` override).
+ *
+ * Renders prev/next cards, the "edit this page" + "last updated" meta row and
+ * a small legal bar. Data comes from `Astro.locals.starlightRoute`, which
+ * Starlight populates from the `editLink`, `lastUpdated` and `pagination`
+ * options in `astro.config.mjs`.
+ */
+import { Icon } from '@astrojs/starlight/components'
+
+const { pagination, editUrl, lastUpdated } = Astro.locals.starlightRoute
+
+const links = [
+  { label: 'GitHub', href: 'https://github.com/glandjs/glandjs.github.io' },
+  { label: 'Source', href: 'https://github.com/glandjs/gland' },
+  { label: 'npm', href: 'https://www.npmjs.com/org/glandjs' },
+  { label: 'Discord', href: 'https://discord.gg/glandjs' },
+]
+
+const updated = lastUpdated
+  ? new Intl.DateTimeFormat('en', { dateStyle: 'medium' }).format(lastUpdated)
+  : undefined
+---
+
+<footer class="sl-footer">
+  {
+    (editUrl || updated) && (
+      <div class="sl-footer__meta">
+        {editUrl && (
+          <a href={String(editUrl)} target="_blank" rel="noopener noreferrer">
+            Edit this page on GitHub
+          </a>
+        )}
+        {updated && <span>Last updated on {updated}</span>}
+      </div>
+    )
+  }
+
+  {
+    (pagination.prev || pagination.next) && (
+      <nav class="sl-pagination-links" aria-label="Page navigation">
+        {pagination.prev && (
+          <a class="sl-pagination-link" href={pagination.prev.href} data-direction="left">
+            <span class="sl-pagination-link__label">
+              <Icon name="right-arrow" class="size-3 rotate-180" />
+              Previous
+            </span>
+            <span class="sl-pagination-link__title">{pagination.prev.label}</span>
+          </a>
+        )}
+        {pagination.next && (
+          <a class="sl-pagination-link" href={pagination.next.href} data-direction="right">
+            <span class="sl-pagination-link__label">
+              Next
+              <Icon name="right-arrow" class="size-3" />
+            </span>
+            <span class="sl-pagination-link__title">{pagination.next.label}</span>
+          </a>
+        )}
+      </nav>
+    )
+  }
+
+  <div class="sl-footer__legal">
+    <p>Gland is an MIT-licensed open source project.</p>
+    <nav aria-label="Footer">
+      {links.map((link) => (
+        <a href={link.href} target="_blank" rel="noopener noreferrer">
+          {link.label}
+        </a>
+      ))}
+    </nav>
+  </div>
+</footer>

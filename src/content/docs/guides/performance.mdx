@@ -1,0 +1,159 @@
+---
+title: Performance
+description: Where the time actually goes, and the handful of knobs that matter.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Gland is small on purpose. This page is short because there is not much to tune — it
+covers where the time goes, which options matter, and which micro-optimisations are
+not worth your attention.
+
+## Where the time goes
+
+For a typical request, in order:
+
+1. **Transport parsing** — body parsing, TLS, socket reads. This dominates, and it is
+   the transport's business, not the framework's.
+2. **Route matching** — a map lookup on the method plus a pattern match on the path.
+3. **Event resolution** — a single object lookup in the frozen channel registry.
+4. **Handler invocation** — your code.
+5. **Response serialisation** — `JSON.stringify` and a write.
+
+Steps 2 and 3 are the only ones Gland adds, and both are constant-time by
+construction.
+
+## Event resolution is O(1)
+
+A `ctx.call('db:product:all', …)` does **not** scan the discovered channels. At bind
+time the framework builds a frozen registry mapping every public event name to its
+internal name, and each request's context holds a reference to it.
+
+```text
+'product:list'  ──lookup──▶  'gland:define:channel:product:list'
+```
+
+The registry is built once, deeply frozen, and shared by reference across every
+context. A miss throws immediately with the list of valid names, rather than
+broadcasting an event nothing is listening to.
+
+## Wildcard cost
+
+Wildcards are resolved during dispatch, by walking the exact branch and then a
+wildcard branch at each depth. Registering many wildcard listeners therefore costs
+more per emit than registering exact names.
+
+```ts
+// Cheapest: one exact name, resolvable from the cache.
+emitter.on('order:placed', handler)
+
+// More expensive: matched on every emit that reaches the prefix.
+emitter.on('order:*', handler)
+```
+
+If a wildcard is on a hot path and its event set is known, register the exact names.
+
+## The listener cache
+
+`@glandjs/events` keeps a small LRU of resolved listener arrays so a repeated event
+skips resolution entirely. The default is deliberately modest.
+
+```ts
+const broker = new EventBroker({
+  name: 'orders',
+  cacheSize: 64,          // @default 6
+  maxListeners: 50,       // @default 5
+  defaultTimeout: 5_000,  // @default 1000
+})
+```
+
+| Option | Default | Raise it when |
+| --- | --- | --- |
+| `cacheSize` | `6` | A small set of events dominates your traffic. |
+| `maxListeners` | `5` | More than five subscribers answer one event. |
+| `defaultTimeout` | `1000` | `watch()` frequently needs longer than a second. |
+
+<Aside type="caution" title="maxListeners is a design smell, not a number to raise">
+  Five listeners on one event usually means one event is doing too much. Splitting
+  the event into a namespace with its own channels is almost always the better fix.
+</Aside>
+
+## The emitter underneath
+
+`@glandjs/emitter` is where the routing work happens.
+
+```ts
+const emitter = new EventEmitter(':', 64)   // delimiter, cache size
+```
+
+- **Tree routing.** Event names are stored as a tree, so `user:*` events share a
+  prefix path. Lookup is proportional to the name's depth, not to the number of
+  registered events.
+- **Hot-path cache.** The 64 most recent resolutions are cached by default. A cache
+  hit does no tree work at all. The cache is flushed on every `on` and `off`, so a
+  topology that changes often will not benefit.
+- **Null-prototype maps.** Both the tree and the cache are created with
+  `Object.create(null)`, so event names such as `constructor` behave normally and
+  lookups never touch `Object.prototype`.
+
+## Avoid allocation in hot handlers
+
+The framework allocates a context per interaction, and that is unavoidable. What you
+control is what happens inside the handler.
+
+```ts
+// Every call allocates a new object.
+@On('order:placed')
+onPlaced(payload: { orderId: string }) {
+  this.index.set(payload.orderId, { ...payload, at: Date.now() })
+}
+
+// Reuse the object you already have.
+@On('order:placed')
+onPlaced(payload: Order) {
+  this.index.set(payload.orderId, payload)
+}
+```
+
+## Precompile routes
+
+Route patterns are plain strings compared once at bind time. Registering thousands of
+routes is fine; registering them in a loop on every request is not — and the framework
+will not save you from that.
+
+```ts
+// Once, at bootstrap.
+const VERSIONS = ['v1', 'v2'] as const
+
+for (const version of VERSIONS) {
+  for (const controller of controllers) {
+    modules.push(createModule(version, controller))
+  }
+}
+```
+
+## Measure before you tune
+
+The framework is not usually the bottleneck. Confirm it before changing anything.
+
+```ts
+const started = process.hrtime.bigint()
+
+// ... the work you actually suspect is slow ...
+
+const elapsedMs = Number(process.hrtime.bigint() - started) / 1e6
+```
+
+A 0.05 ms framework overhead is invisible next to a 4 ms database round trip. Optimise
+the round trip.
+
+## When Gland is the wrong tool
+
+Being straight about this: if your service is dominated by database round trips or
+network latency, the framework's overhead is irrelevant — and a smaller, simpler
+framework may serve you better. Gland earns its place when the interesting behaviour
+is in your domain logic, and when being able to test that logic without a server is
+worth the indirection.
+
+See [Why Gland?](/introduction/why-gland#what-it-is-not-for).

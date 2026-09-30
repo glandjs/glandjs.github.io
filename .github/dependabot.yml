@@ -1,0 +1,57 @@
+version: 2
+
+updates:
+  # ── pnpm / npm dependencies ──────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tehran"
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+    groups:
+      astro:
+        patterns:
+          - "astro"
+          - "@astrojs/*"
+      starlight:
+        patterns:
+          - "@astrojs/starlight*"
+      tailwind:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "@astrojs/tailwind*"
+      expressive-code:
+        patterns:
+          - "@expressive-code/*"
+          - "expressive-code"
+          - "astro-expressive-code"
+      typescript:
+        patterns:
+          - "typescript"
+          - "@astrojs/check"
+      # Everything else lands in one reviewable PR.
+      "*":
+        patterns:
+          - "*"
+    open-pull-requests-limit: 10
+
+  # ── GitHub Actions ───────────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Tehran"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "ci"
+    open-pull-requests-limit: 5

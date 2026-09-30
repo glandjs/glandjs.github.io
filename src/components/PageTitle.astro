@@ -1,0 +1,25 @@
+---
+/**
+ * Page title (Starlight `PageTitle` override).
+ *
+ * Starlight renders this with no props, so the frontmatter is read from the
+ * route on `Astro.locals`.
+ */
+const { title, description, badge } = Astro.locals.starlightRoute.entry.data
+
+// Must match Starlight's `PAGE_TITLE_ID` so the "skip to content" link and the
+// splash hero anchor keep working.
+const PAGE_TITLE_ID = '_top'
+---
+
+{
+  badge && (
+    <p class="page-title__eyebrow">
+      <code>{badge}</code>
+    </p>
+  )
+}
+
+<h1 id={PAGE_TITLE_ID}>{title}</h1>
+
+{description && <p class="page-title__description">{description}</p>}

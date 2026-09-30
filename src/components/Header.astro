@@ -1,114 +1,81 @@
 ---
-import { Icon } from '@astrojs/starlight/components';
+/**
+ * Top navigation bar (Starlight `Header` override).
+ *
+ * `Search` and `ThemeSelect` are Starlight's own components, re-used so that
+ * Pagefind indexing, the ⌘K shortcut and the persisted colour-scheme
+ * preference keep working exactly as they do upstream.
+ */
+import Search from '@astrojs/starlight/components/Search.astro'
+import ThemeSelect from '@astrojs/starlight/components/ThemeSelect.astro'
+import { Icon } from '@astrojs/starlight/components'
 
-const navItems = [
-  { name: "Gland_", href: "/help" },
-  { name: "documentation", href: "/documentation" },
-  { name: "changelog", href: "/changelog" },
-  { name: "community", href: "/community" }
-];
+import logo from '../assets/gland-logo.svg'
+
+const { pathname } = Astro.url
+
+const links = [
+  {
+    label: 'Docs',
+    href: '/introduction/what-is-gland',
+    match: /^\/(introduction|getting-started|fundamentals|guides|faq|documentation)/,
+  },
+  { label: 'Packages', href: '/packages/core', match: /^\/packages/ },
+  { label: 'Changelog', href: '/changelog/emitter', match: /^\/changelog/ },
+]
+
+const isCurrent = (match: RegExp) => match.test(pathname)
 ---
 
-    <a href="/"  class="logo-section">
-       <img src="/logo.png" alt="Gland Logo" class="logo-img" />
-       <span>GLAND</span>
-    </a>
+<header class="site-header">
+  <a href="/" class="site-header__brand" aria-label="Gland — home">
+    <span class="site-header__logo">
+      <img src={logo.src} alt="" width="28" height="25" />
+    </span>
+    <span class="site-header__word" translate="no">Gland</span>
+  </a>
 
-  <div class="middle-section"></div>
+  <a class="site-header__version" href="/changelog/emitter">v1.1.4</a>
 
-  <nav class="nav-links">
-    {navItems.map((item) => (
-      <div class="nav-item">
-        <a href={item.href} class="nav-link">
-          {item.name}
+  <nav class="site-header__nav" aria-label="Main">
+    {
+      links.map((link) => (
+        <a
+          href={link.href}
+          class="site-header__link"
+          aria-current={isCurrent(link.match) ? 'page' : undefined}
+        >
+          {link.label}
         </a>
-      </div>
-    ))}
-
-    <a
-      href="https://github.com/glandjs/gland"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="github-icon"
-      aria-label="GitHub Repository"
-    >
-      <Icon name="github" class="w-5 h-5" />
-    </a>
+      ))
+    }
   </nav>
 
-  <button
-    class="mobile-menu-button"
-    aria-label="Toggle navigation menu"
-  >
-    <div class="relative w-5 h-5 flex items-center justify-center">
-      <div class="flex flex-col gap-1 w-5">
-        <span class="block h-0.5 w-full bg-gray-300 rounded-full"></span>
-        <span class="block h-0.5 w-full bg-gray-300 rounded-full"></span>
-        <span class="block h-0.5 w-3/4 ml-auto bg-gray-300 rounded-full"></span>
-      </div>
-    </div>
-  </button>
+  <div class="site-header__spacer"></div>
 
-<div class="mobile-menu">
-    {navItems.map((item) => (
-      <a
-        href={item.href}
-        class="block px-6 py-3 text-gray-400 hover:text-gray-200"
-      >
-        {item.name}
-      </a>
-    ))}
+  <div class="site-search print:hidden">
+    <Search />
+  </div>
+
+  <div class="site-header__actions print:hidden">
     <a
-      href="https://github.com/glandjs/gland"
+      class="site-header__icon-link site-header__icon-link--secondary"
+      href="https://github.com/glandjs/glandjs.github.io"
       target="_blank"
       rel="noopener noreferrer"
-      class="flex items-center px-6 py-3 text-gray-400 hover:text-gray-200"
+      aria-label="Gland on GitHub"
     >
-      <Icon name="github" class="w-5 h-5 mr-3" />
-      GitHub
+      <Icon name="github" class="size-5" />
     </a>
+    <a
+      class="site-header__icon-link site-header__icon-link--secondary"
+      href="https://discord.gg/glandjs"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Gland community on Discord"
+    >
+      <Icon name="discord" class="size-5" />
+    </a>
+    <ThemeSelect />
   </div>
-</div>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    // Mobile menu toggle
-    const mobileMenuButton = document.querySelector('.mobile-menu-button');
-    const mobileMenu = document.querySelector('.mobile-menu')!;
-
-    if (mobileMenuButton && mobileMenu) {
-      mobileMenuButton.addEventListener('click', () => {
-        mobileMenu.classList.toggle('active');
-      });
-    }
-
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      themeToggle.addEventListener('click', () => {
-        document.documentElement.classList.toggle('dark');
-        localStorage.setItem('theme',
-          document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-        );
-      });
-    }
-
-    // Set initial theme based on localStorage or system preference
-    if (
-      localStorage.getItem('theme') === 'dark' ||
-      (!localStorage.getItem('theme') &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches)
-    ) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    // Close mobile menu on window resize
-    window.addEventListener('resize', () => {
-      if (window.innerWidth >= 768 && mobileMenu.classList.contains('active')) {
-        mobileMenu.classList.remove('active');
-      }
-    });
-  });
-</script>
+</header>

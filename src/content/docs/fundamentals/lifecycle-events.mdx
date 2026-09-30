@@ -1,0 +1,185 @@
+---
+title: Lifecycle events
+description: The five Gland hooks, the order they run in, and the signals that trigger a graceful shutdown.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Gland gives you five hooks. Detection is duck-typed — if a class has a method with
+the right name, it runs. Implementing the interface is optional but strongly
+recommended, because it documents the intent.
+
+```ts
+import type {
+  OnModuleInit,
+  OnModuleDestroy,
+  OnAppBootstrap,
+  OnAppShutdown,
+  OnChannelInit,
+} from '@glandjs/core'
+```
+
+## The five hooks
+
+| Interface | Method | Runs |
+| --- | --- | --- |
+| `OnModuleInit` | `onModuleInit(): void \| Promise<void>` | after the graph is built, before binding |
+| `OnChannelInit` | `onChannelInit(): void \| Promise<void>` | after channels are bound |
+| `OnAppBootstrap` | `onAppBootstrap(): void \| Promise<void>` | last step of startup |
+| `OnAppShutdown` | `onAppShutdown(signal?: string): void \| Promise<void>` | on a signal or fatal error |
+| `OnModuleDestroy` | `onModuleDestroy(): void \| Promise<void>` | last thing that runs |
+
+All five may be synchronous or asynchronous; the framework awaits them.
+
+## Startup order
+
+```text
+GlandFactory.create(AppModule)
+│
+├─ 1. Scanning module dependencies
+├─ 2. Initializing dependency injector      ← instances exist from here on
+├─ 3. Running module initialization hooks    ← onModuleInit()
+├─ 4. Binding application components        ← channels subscribe, routes broadcast
+├─ 5. Running channel initialization hooks  ← onChannelInit()
+└─ 6. Bootstrapping application             ← onAppBootstrap()
+```
+
+<Aside type="caution" title="onModuleInit runs before channels are bound">
+  This is the single most common source of confusion. Anything that needs to reach a
+  channel belongs in `onChannelInit` or later.
+</Aside>
+
+```ts
+@Module({ channels: [Database] })
+export class AppModule implements OnModuleInit, OnChannelInit, OnAppBootstrap {
+  onModuleInit() {
+    // Instances exist. Channels are NOT bound yet.
+  }
+
+  async onChannelInit() {
+    // Every channel is bound. This is the first safe place to call one.
+    await this.database.warmUp()
+  }
+
+  onAppBootstrap() {
+    // Everything is wired. Safe to accept traffic.
+  }
+}
+```
+
+## Shutdown order
+
+```text
+process receives SIGTERM
+│
+├─ onAppShutdown('SIGTERM')
+└─ onModuleDestroy()
+```
+
+```ts
+@Module({ channels: [Database] })
+export class AppModule implements OnAppShutdown, OnModuleDestroy {
+  async onAppShutdown(signal?: string) {
+    // Stop accepting new work. `signal` tells you why.
+    await this.queue.drain()
+  }
+
+  async onModuleDestroy() {
+    // Release resources. Connections, timers, handles.
+    await this.database.disconnect()
+  }
+}
+```
+
+## Signals
+
+Gland registers process handlers for you, so you rarely need a `process.on` of your
+own.
+
+| Signal | `signal` value | Exit code |
+| --- | --- | --- |
+| `SIGTERM` | `'SIGTERM'` | `0` |
+| `SIGINT` | `'SIGINT'` | `0` |
+| `SIGHUP` | `'SIGHUP'` | `0` |
+| Uncaught exception | `'uncaughtException'` | `1` |
+| Unhandled rejection | `'unhandledRejection'` | `1` |
+
+A fatal signal runs the same two hooks before exiting, so a crash still flushes your
+buffers and closes your connections.
+
+<Aside type="note">
+  `onModuleDestroy` only runs on a signal or a fatal error. It is not invoked when
+  `process.exit()` is called directly, because there is no opportunity to run
+  anything at that point.
+</Aside>
+
+## Which classes can have hooks
+
+Any class the container instantiates:
+
+- **Modules** — application-level concerns.
+- **Controllers** — per-feature concerns.
+- **Channels** — resource concerns, and `onChannelInit` is channel-specific.
+
+```ts
+@Controller('health')
+export class HealthController implements OnModuleInit {
+  private ready = false
+
+  onModuleInit() {
+    this.ready = true
+  }
+
+  @Get()
+  check(ctx: ExpressContext) {
+    return ctx.send({ ready: this.ready })
+  }
+}
+```
+
+```ts
+@Channel('db')
+export class Database implements OnChannelInit, OnModuleDestroy {
+  private pool: Pool | undefined
+
+  async onChannelInit() {
+    this.pool = await createPool()
+  }
+
+  async onModuleDestroy() {
+    await this.pool?.end()
+  }
+
+  @On('product:all')
+  async all() {
+    return this.pool!.query('select * from products')
+  }
+}
+```
+
+## Guarding your own calls
+
+The lifecycle scanner is exported, so you can run a hook phase on demand — useful in
+tests that need channels ready without a full bootstrap.
+
+```ts
+import { LifecycleScanner } from '@glandjs/core'
+
+const scanner = new LifecycleScanner(container.moduleContainer)
+scanner.scanForHooks()
+await scanner.onChannelInit()
+```
+
+## Ordering within a phase
+
+Hooks of the same phase run concurrently via `Promise.all`, across all modules,
+controllers and channels. If two hooks must run in sequence, express that relationship
+inside one hook rather than relying on registration order.
+
+```ts
+// Deterministic, regardless of how the components were discovered.
+onModuleInit(): void | Promise<void> {
+  return this.dependencies.ready()
+}
+```

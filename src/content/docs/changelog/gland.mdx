@@ -1,0 +1,70 @@
+---
+title: "Changelog - @glandjs/core & common"
+badge: '@glandjs/core@1.0.3-beta'
+description: Release history for @glandjs/core and @glandjs/common, mirrored from the gland repository.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+Release history for **`@glandjs/core`** and **`@glandjs/common`**, mirrored from
+[`glandjs/gland`](https://github.com/glandjs/gland/blob/main/docs/CHANGELOG.md).
+
+<Aside type="caution" title="The upstream changelog is sparse">
+  The `gland` repository records only the initial alpha release. The published
+  versions — `1.0.3-beta` for both packages — are tracked through changesets and
+  npm rather than through this file. The published version is what the
+  [package reference](/packages/core) documents.
+</Aside>
+
+## [1.0.0-alpha.1] - 2025-03-28
+
+### Added
+
+- **Core Framework**: Initial alpha release of the Gland framework with core packages:
+  - `@glandjs/core`: Dependency Injection (DI), basic framework setup.
+  - `@glandjs/http`: HTTP server handling (routes, controllers).
+  - `@glandjs/events`: Event-driven architecture with support for various protocols.
+  - `@glandjs/common`: Common decorators and utilities (like `@Module`, `@Controller`,
+    `@Get`, etc.).
+- **Example project**: Added a small example showcasing the use of Gland framework,
+  including routing and event handling.
+  - Example: [Very Simple Example](https://github.com/glandjs/gland/blob/main/examples/very-simple.ts)
+
+### Changes
+
+- **Package name**: Renamed from `gland` to `glandjs` due to an existing namespace on
+  npm. All the packages have been published under `@glandjs`.
+
+### Known Issues
+
+- **HTTP Static Methods**: Some static methods in the HTTP package are currently
+  non-functional.
+- **Minor bugs**: As this is an alpha release, there might be bugs and instability in
+  some of the features.
+
+### New Contributors
+
+- @xDefyingGravity
+- @masih-developer
+
+## Current published versions
+
+| Package | Version | Repository |
+| --- | --- | --- |
+| `@glandjs/core` | `1.0.3-beta` | [`glandjs/gland`](https://github.com/glandjs/gland/tree/main/packages/core) |
+| `@glandjs/common` | `1.0.3-beta` | [`glandjs/gland`](https://github.com/glandjs/gland/tree/main/packages/common) |
+
+## Samples
+
+The canonical end-to-end example lives at
+[`glandjs/gland/samples/01-simple`](https://github.com/glandjs/gland/tree/main/samples/01-simple).
+It is the source the [First steps](/getting-started/first-steps) guide is built on:
+a root module, a feature module, a controller, two channels, a typed event map, and
+all four application-level lifecycle hooks.
+
+## See also
+
+- [`@glandjs/core`](/packages/core) — DI container, bootstrap, `Context`.
+- [`@glandjs/common`](/packages/common) — the decorators and metadata keys.
+- [Changelog for `@glandjs/events`](/changelog/events).
+- [Changelog for the HTTP packages](/changelog/http).

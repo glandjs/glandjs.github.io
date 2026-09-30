@@ -1,0 +1,159 @@
+---
+title: Modules
+description: Modules are Gland's composition boundaries. They register controllers, channels and other modules, and carry the lifecycle hooks.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+A **module** is a class that groups controllers and channels, can import other
+modules, and can react to the application lifecycle. It is the unit you organise code
+around and the unit the framework walks at startup.
+
+## Defining a module
+
+```ts
+import { Module } from '@glandjs/common'
+
+@Module({
+  imports: [ProductModule, AuthModule],
+  controllers: [ProductController, HealthController],
+  channels: [ProductChannel, AuditChannel],
+})
+export class AppModule {}
+```
+
+All three keys are optional.
+
+| Key | Holds | Instantiated |
+| --- | --- | --- |
+| `imports` | module classes, dynamic modules, or promises of them | once per graph node |
+| `controllers` | classes with route decorators | once, as a singleton |
+| `channels` | classes with `@On()` handlers | once, as a singleton |
+
+<Aside type="note" title="Everything listed is a provider">
+  Gland has no `@Injectable()` and no `providers` array. Whatever you list in
+  `controllers` or `channels` is instantiated once and injected wherever it is
+  needed. This is the whole provider model.
+</Aside>
+
+## Nesting modules
+
+Imports are resolved transitively, and a module is only ever registered once, no
+matter how many modules import it. A diamond in the graph converges on a single
+instance.
+
+```ts title="src/app.module.ts"
+@Module({
+  imports: [ProductModule, OrderModule, HealthModule],
+  channels: [Database],
+})
+export class AppModule {}
+```
+
+```text
+                AppModule
+                ┌───┴───────┐
+        ProductModule   OrderModule       (both import HealthModule,
+                │            │            HealthModule is created once)
+                └─────┬──────┘
+              HealthModule
+```
+
+<Aside type="tip" title="Modules group, they do not scope">
+  A controller can call any channel in the application registry, even one registered
+  by a sibling module. Modules are a way to organise and bootstrap code — not a
+  visibility boundary. If you need a hard boundary, keep the packages separate.
+</Aside>
+
+## Dynamic modules
+
+A dynamic module extends a decorated module at import time. Its `controllers` and
+`channels` are **merged** with the base module's, and its `imports` are added
+alongside the base's.
+
+```ts
+import type { DynamicModule } from '@glandjs/common'
+
+@Module({ controllers: [CoreController] })
+export class CoreModule {}
+
+export function withAuditChannel(audit: Constructor): DynamicModule {
+  return {
+    module: CoreModule,
+    channels: [audit],
+  }
+}
+
+@Module({ imports: [withAuditChannel(AuditChannel)] })
+export class AppModule {}
+```
+
+## Lazy modules
+
+When two modules would import each other, the cycle breaks at module *resolution*
+time. Wrap the import in a promise to defer it.
+
+```ts
+@Module({
+  imports: [Promise.resolve(() => require('./lazy').LazyModule)],
+})
+export class AppModule {}
+```
+
+<Aside type="caution" title="Not the same as a circular dependency">
+  A lazy import defers *module discovery*. It does not let two classes inject each
+  other — that still needs
+  [`forwardRef`](/fundamentals/dependency-injection#breaking-circular-dependencies).
+</Aside>
+
+## Lifecycle hooks in a module
+
+Any class in the graph can implement the five lifecycle hooks. On a module they
+describe application-level concerns.
+
+```ts
+@Module({ imports: [ProductModule] })
+export class AppModule implements OnModuleInit, OnModuleDestroy, OnAppBootstrap, OnAppShutdown {
+  onModuleInit() {}                    // after the graph is built
+  onAppBootstrap() {}                  // everything is bound
+  onAppShutdown(signal?: string) {}    // SIGTERM, SIGINT, …
+  onModuleDestroy() {}                 // last thing that runs
+}
+```
+
+See [Lifecycle events](/fundamentals/lifecycle-events) for the full contract and the
+exact order.
+
+## Bootstrapping
+
+The root module is the argument to `GlandFactory.create()`.
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { AppModule } from './app.module'
+
+const app = await GlandFactory.create(AppModule)
+```
+
+## API
+
+### `@Module(metadata: ModuleMetadata)`
+
+```ts
+interface ModuleMetadata<T = any> {
+  imports?: ImportableModule<T>[]
+  controllers?: Constructor<T>[]
+  channels?: Constructor<T>[]
+}
+
+type ImportableModule<T = any> =
+  | Constructor<T>
+  | DynamicModule<T>
+  | Promise<DynamicModule<T>>
+```
+
+### `GlandFactory.create(root: Constructor): Promise<GlandBroker>`
+
+Walks the module graph, builds the container, runs the hooks and binds routes and
+channels. Returns a `GlandBroker` — see [`@glandjs/core`](/packages/core).

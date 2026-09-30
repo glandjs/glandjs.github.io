@@ -1,0 +1,16 @@
+---
+import PackageCard from './PackageCard.astro'
+import { packages } from '../data/packages.mjs'
+---
+
+<div class="package-grid">
+  {packages.map((pkg) => <PackageCard {...pkg} />)}
+</div>
+
+<style>
+  .package-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  }
+</style>

@@ -1,6 +1,26 @@
 ---
-title: 'GlandJs | Event-Driven Node.js framework'
-description: 'Gland is a lightweight, modular framework for building high‑performance, event‑driven JavaScript and TypeScript applications.'
+title: Event-driven Node.js framework
+description: Gland is a lightweight, event-driven and protocol-agnostic framework for building modular Node.js applications.
 template: splash
-layout: '@layouts/Layout.astro'
+hero:
+  tagline: Event-driven, protocol-agnostic and TypeScript-first. Controllers emit, channels act, brokers carry the transport.
+  actions:
+    - text: Get started
+      link: /getting-started/installation
+      icon: right-arrow
+      variant: primary
+    - text: Introduction
+      link: /introduction/what-is-gland
+      icon: open-book
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/glandjs/gland
+      icon: github
+      variant: minimal
 ---
+
+import FeatureGrid from '@components/FeatureGrid.astro'
+
+## Built for a domain, not a framework
+
+<FeatureGrid />

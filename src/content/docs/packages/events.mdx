@@ -1,0 +1,317 @@
+---
+title: '@glandjs/events'
+badge: '@glandjs/events@1.1.2'
+description: The namespaced event broker — channels, mesh networking, request/response calls, async watchers and loop-safe propagation.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+`@glandjs/events` is the event backbone of Gland. Where `@glandjs/emitter` is a local
+pub/sub primitive, a **broker** is a stateful, connectable node: it owns a namespace,
+exposes channels, can be linked into a mesh, and can turn events into promises.
+
+```bash
+pnpm add @glandjs/events
+```
+
+## Creating a broker
+
+```ts
+import { EventBroker, type EventRecord } from '@glandjs/events'
+
+const broker = new EventBroker<Events>({ name: 'orders' })
+```
+
+### `BrokerOptions`
+
+```ts
+interface BrokerOptions {
+  /** Unique name of this broker. Required — it is also the broker's id. */
+  name: string
+  /** Namespace delimiter. @default ':' */
+  delimiter?: string
+  /** Listener resolution cache size. @default 6 */
+  cacheSize?: number
+  /** Default timeout for async operations, in ms. @default 1000 */
+  defaultTimeout?: number
+  /** Maximum listeners per event. @default 5 */
+  maxListeners?: number
+  /** Do not throw when an `error` event has no listener. @default false */
+  ignoreErrors?: boolean
+}
+```
+
+```ts
+const broker = new EventBroker({
+  name: 'orders',
+  delimiter: ':',
+  defaultTimeout: 5_000,
+  maxListeners: 20,
+})
+```
+
+## The typed event map
+
+Every broker, channel and context is generic over one map of event names to payload
+types.
+
+```ts
+import { IOEvent } from '@glandjs/events'
+
+interface Events extends EventRecord {
+  'order:placed': { orderId: string; total: number }
+  'order:paid': IOEvent<{ orderId: string }, Promise<boolean>>
+}
+```
+
+`IOEvent<Payload, Return>` declares both sides of a request/response event. A plain
+type is a payload with a `void` return.
+
+## Subscribing
+
+### `on(event, listener, options?)`
+
+```ts
+broker.on('order:placed', (payload) => {
+  console.log(payload.orderId)
+})
+
+// Chained — every method returns the broker
+broker
+  .on('order:placed', audit)
+  .on('order:paid', charge)
+```
+
+Pass `null` with `watch: true` and you get a promise instead of a subscription:
+
+```ts
+const order = await broker.on('order:placed', null, {
+  watch: true,
+  timeout: 2_000,
+  defaultValue: null,
+})
+```
+
+### `once(event, listener)`
+
+Fires a single time, then unsubscribes.
+
+```ts
+broker.once('server:ready', () => startWorkers())
+```
+
+### `off(event, listener?)`
+
+```ts
+broker.off('order:placed', audit)   // one listener
+broker.off('order:placed')          // every listener for that exact name
+```
+
+### `getListener(event)`
+
+Returns the listeners registered for an exact event name.
+
+<Aside type="caution">
+  `getListener` performs a literal lookup only. Listeners registered through a
+  wildcard pattern are not returned, so `call()` will not invoke them.
+</Aside>
+
+## Emitting
+
+### `emit(event, payload, options?)`
+
+Synchronous dispatch, in registration order, returning the broker.
+
+```ts
+broker.emit('order:placed', { orderId: 'o-1', total: 42 })
+```
+
+Dispatch is synchronous by design. A listener may be `async`, but the emit call does
+not wait for it — if you need the result, use `call()`.
+
+### `call(event, data)` / `call(event, data, 'all')`
+
+Invokes listeners and returns their result.
+
+```ts
+const ok = await broker.call('order:paid', { orderId: 'o-1' })
+//    ^? Promise<boolean> — straight from IOEvent
+
+const results = await broker.call('order:paid', { orderId: 'o-1' }, 'all')
+//    ^? Promise<boolean>[]
+```
+
+Without a strategy, the first registered listener's result is returned. With `'all'`,
+every result is collected in registration order.
+
+## Waiting for events
+
+### `watch(event, timeoutMs?)`
+
+Turns an event into a promise.
+
+```ts
+const order = await broker.watch('order:placed')
+```
+
+Rejects after `timeoutMs` (defaulting to `defaultTimeout`) with a message naming the
+event. Supply `defaultValue` through `on`/`once` options to receive it instead.
+
+```ts
+const order = await broker.on('order:placed', null, {
+  watch: true,
+  timeout: 1_000,
+  defaultValue: { orderId: 'fallback', total: 0 },
+})
+```
+
+## Channels
+
+`channel(name)` returns a live channel object scoped to a namespace. Instances are
+cached per name, so calling it twice returns the same object.
+
+```ts
+const orders = broker.channel('order')
+
+orders.on('placed', (payload) => {})   // -> 'order:placed'
+orders.emit('placed', { orderId: 'o-1' })
+await orders.call('paid', { orderId: 'o-1' })
+
+const refunds = orders.channel('refund')   // nested -> 'order:refund:*'
+```
+
+| Member | Type |
+| --- | --- |
+| `id` | `string` — the owning broker's id |
+| `name` | `string` — the channel name |
+| `on` / `once` / `off` / `emit` / `call` / `getListener` | as on the broker, namespaced |
+| `watch` | `Promise`, namespaced |
+| `broadcast` | send to the whole mesh |
+| `channel(name)` | a nested channel |
+
+## Mesh networking
+
+Brokers can be connected into a network. An event emitted on one broker is relayed to
+its peers, which serve their own listeners and relay onward.
+
+```ts
+const a = new EventBroker({ name: 'service-a' })
+const b = new EventBroker({ name: 'service-b' })
+
+a.connectTo(b)          // bidirectional
+
+a.on('event:name', (data) => console.log('on a', data))
+b.emit('event:name', { ok: true })
+```
+
+| Method | Signature | Description |
+| --- | --- | --- |
+| `connectTo` | `(broker, options?) => this` | Connect bidirectionally. |
+| `disconnect` | `(brokerId) => boolean` | Drop one connection. |
+| `disconnectAll` | `() => this` | Drop every connection. |
+| `isConnected` | `(brokerId) => boolean` | Test a connection. |
+| `getConnections` | `() => BrokerId[]` | Connected broker ids. |
+| `getConnection` | `(brokerId) => EventBroker \| undefined` | The connected broker. |
+| `createConnections` | `(brokers[], options?) => this` | Full mesh, including peer-to-peer. |
+| `findBroker` | `(brokerId, maxDepth = 3) => EventBroker \| undefined` | Multi-hop lookup. |
+| `broadcast` | `(event, payload, options?) => this` | Emit to the whole mesh. |
+| `broadcastTo` | `(brokerIds, event, payload, options?) => this` | Emit to a subset. |
+| `emitTo` | `(brokerId, event, payload, options?) => boolean` | Emit to one peer. |
+| `send` | `(event, target, options?) => this` | Emit to one peer object. |
+| `callTo` | `(brokerId, event, data) => EventReturn` | Request/response across the mesh. |
+
+`ConnectionOptions` restricts what is forwarded:
+
+```ts
+interface ConnectionOptions {
+  events?: string[]   // only forward these
+}
+
+a.connectTo(b, { events: ['order:*'] })
+```
+
+<Aside type="note" title="Loop safety">
+  Each propagated event carries a trace of the brokers that have already seen it, so
+  a fully connected mesh terminates instead of bouncing forever. The trace also means
+  a broker never handles the same propagated event twice.
+</Aside>
+
+<Aside type="caution" title="No delivery guarantees">
+  Mesh propagation is best-effort. A disconnected peer, a process crash or a
+  partition loses the event. This is deliberate — persistence and exactly-once
+  delivery belong in a system that can actually guarantee them.
+</Aside>
+
+## Shutdown
+
+```ts
+broker.shutdown()
+```
+
+Clears pending watchers, drops every connection and releases cached channels.
+
+## Full reference
+
+```ts
+class EventBroker<TEvents extends EventRecord> implements Broker<TEvents> {
+  constructor(options: BrokerOptions)
+  get id(): string
+
+  on(event, listener, options?): this
+  on(event, null, { watch: true, timeout?, defaultValue? }): Promise<Payload>
+  once(event, listener): this
+  off(event, listener?): this
+  emit(event, payload, options?): this
+  getListener(event): Listener[]
+
+  call(event, data): EventReturn
+  call(event, data, 'all'): EventReturn[]
+  watch(event, timeoutMs?): Promise<Payload>
+  channel(name): Channel<ChannelEvents>
+
+  broadcast(event, payload, options?): this
+  broadcastTo(brokerIds, event, payload, options?): this
+  send(event, target, options?): this
+  emitTo(brokerId, event, payload, options?): boolean
+  callTo(brokerId, event, data): EventReturn
+  callTo(brokerId, event, data, 'all'): EventReturn[]
+
+  connectTo(broker, options?): this
+  disconnect(brokerId): boolean
+  disconnectAll(): this
+  isConnected(brokerId): boolean
+  getConnections(): BrokerId[]
+  getConnection(brokerId): EventBroker | undefined
+  createConnections(brokers, options?): this
+  findBroker(brokerId, maxDepth?): EventBroker | undefined
+
+  shutdown(): void
+}
+```
+
+## Design characteristics
+
+**Synchronous dispatch.** Listeners run immediately, in registration order, which
+makes event flows straightforward to reason about and to log.
+
+**No persistence.** Events flow and are gone. If no listener is registered, the emit
+is a no-op.
+
+**No guaranteed delivery.** There is no acknowledgement, retry or dead-lettering.
+
+**No built-in serialisation.** The event map is compile-time only; nothing is
+encoded. To move events between processes, put a channel behind a real transport.
+
+These are design choices, not gaps. If you need durability, do the work in a channel
+that writes to a database or a queue.
+
+## Errors
+
+| Condition | Behaviour |
+| --- | --- |
+| `on` with a `null` listener and no `watch: true` | throws `Listener cannot be null unless 'watch: true' is explicitly set in options.` |
+| More than `maxListeners` listeners on one event | throws `Maximum listeners (5) exceeded for event 'order:placed'` |
+| `watch` timeout | rejects with `Event 'order:placed' timed out after 1000ms` |
+| `shutdown` with watchers pending | rejects with `Watcher shutdown before '…' was emitted` |
+| `emit('error')` with no listener | throws, unless `ignoreErrors: true` |

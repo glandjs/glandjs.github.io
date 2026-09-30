@@ -1,0 +1,94 @@
+---
+title: Why Gland?
+description: The trade-offs behind Gland, and the kind of application it is a good fit for — and the kind it is not.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Frameworks are trade-offs. This page states Gland's, so you can decide whether they
+are the ones you want to make.
+
+## The trade-offs
+
+### Controllers are indirect on purpose
+
+Reaching a channel through `ctx.call()` is one indirection more than calling a
+service. In exchange, the side effect is a separately registered, separately tested
+and separately replaceable unit. If your application has a handful of endpoints and
+nothing else, plain route handlers are simpler and you should keep them.
+
+### Channels must be globally unique
+
+The channel registry is global and checked at bind time. Two channels cannot both
+answer `product:list`, and a collision fails loudly at startup instead of silently
+picking a winner. This is a constraint — it is also what makes event resolution a
+constant-time lookup instead of a scan.
+
+### Events are ephemeral
+
+There is no persistence and no queue. If a channel is not registered when an event is
+emitted, that event is gone. For real-time coordination inside a process this is the
+right default: it keeps the system predictable and fast. If you need durability, put
+a database or a message queue behind a channel and do the work there.
+
+### The HTTP surface is a broker, not the core
+
+`@glandjs/core` has no notion of a request. Everything HTTP — routing, the context,
+body parsing, CORS — comes from `@glandjs/http` and an adapter such as
+`@glandjs/express`. That means an HTTP-shaped application is a composition of parts
+you can see, not a monolith you inherit.
+
+## What it is good at
+
+- **APIs with real domain logic.** Order flows, payment state machines, multi-step
+  onboarding — anything where a controller that only translates is a win.
+- **Polyglot services.** One domain model reused over HTTP, WebSocket or RPC by
+  swapping the broker.
+- **Message and event pipelines.** Gating, enrichment and fan-out expressed as
+  channels that subscribe to a namespace.
+- **Long-lived services with strict typing.** Event contracts live in one map, so
+  refactors fail at compile time.
+- **Incremental adoption.** Mount Gland channels inside an existing Express app
+  without rewriting its routes.
+
+## What it is not for
+
+- **CRUD-only services.** If a controller body is a single database read, the channel
+  layer is ceremony.
+- **Anything that needs exactly-once delivery.** Gland guarantees synchronous,
+  in-process, at-most-once dispatch by design.
+- **Serverless cold starts as a primary constraint.** The DI container builds the
+  module graph on boot; that is cheap, but it is not zero.
+- **A batteries-included platform.** No ORM, no config system, no CLI. Gland is the
+  composition layer; you pick the rest.
+
+## The comparison that matters
+
+| | Traditional layered app | Gland |
+| --- | --- | --- |
+| Controller depends on | service instances | the event map |
+| Side effects live in | services | channels |
+| Adding a side effect | edit the controller | add a channel |
+| Testing business logic | mock the service | call the channel |
+| Changing transport | rewrite the handlers | change the broker |
+| Where is the behaviour? | spread across layers | declared in the event map |
+
+## Design commitments
+
+These are the rules the codebase is held to. They are the reason the API is small.
+
+1. **No hidden behaviour.** A method does one thing, and the docs can state what that
+   thing is without a caveat.
+2. **Composition over configuration.** New capabilities are new packages or channels,
+   never new switches on existing ones.
+3. **Types are the contract.** The event map is the single source of truth for what
+   crosses a boundary.
+4. **Fail at startup, not at 3 a.m.** Duplicate channel names, unresolvable
+   dependencies and circular references are all detected during bootstrap.
+
+<Aside type="tip" title="Judging it fairly">
+  Gland is young and its HTTP layer is still `1.0.0-beta`. If you need a battle-tested
+  HTTP stack today, run Gland channels beside Express and keep Express for routing.
+  The two compose without either one knowing about the other.
+</Aside>

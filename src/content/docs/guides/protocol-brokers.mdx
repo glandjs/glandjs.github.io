@@ -1,0 +1,178 @@
+---
+title: Protocol brokers
+description: How the transport boundary works, and how to add a new one by extending BrokerAdapter.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components'
+
+
+Gland's core is protocol-agnostic. Everything transport-specific lives in a **broker**:
+an object that owns its own `EventBroker`, subscribes to the framework's route
+definitions, and hands back a transport application.
+
+This guide covers the contract, then a complete worked example.
+
+## The contract
+
+`connectTo()` does exactly three things:
+
+```ts
+const adapter = new AdapterClass(options)   // 1. build the broker + application
+adapter.broker.connectTo(this.broker)       // 2. link the brokers
+return adapter.initialize()                 // 3. bind routes, return the app
+```
+
+For your adapter to work, that means:
+
+1. It extends `BrokerAdapter<TEvents, TApp, TOptions>`.
+2. Its constructor takes `options?: TOptions` and assigns `this.broker` and
+   `this.instance`.
+3. `initialize()` subscribes to `gland:define:route`, registers each route on
+   `this.instance`, and returns it.
+
+## The route payload
+
+When core binds a controller method it broadcasts one `gland:define:route` event per
+route.
+
+```ts
+interface GlandRoute<TContext = any> {
+  readonly path: string      // the handler's own path, e.g. ':id'
+  readonly fullPath: string  // fully qualified, e.g. '/products/:id'
+  readonly method: string    // UPPER-CASE, e.g. 'GET'
+  readonly action: (ctx: TContext) => unknown
+}
+```
+
+<Aside type="note">
+  `fullPath` is already normalised — leading slash, no trailing slash. Register it as
+  it is. The Express adapter additionally runs its own `normalizePath`, which is why
+  the path arrives under `payload.meta.path` there.
+</Aside>
+
+## A minimal adapter
+
+Here is a complete broker for a hypothetical JSON-RPC server. It is deliberately
+small — the point is the shape.
+
+```ts title="src/rpc/broker.ts"
+import {
+  BrokerAdapter,
+  GLAND_ROUTE_EVENT,
+  type BrokerAdapterClass,
+} from '@glandjs/core'
+import { EventBroker, type EventRecord } from '@glandjs/events'
+import { RpcServer, type RpcOptions } from './server'
+import { RpcContext } from './context'
+
+export class RpcBroker<TEvents extends EventRecord> extends BrokerAdapter<
+  TEvents,
+  RpcServer,
+  RpcOptions
+> {
+  constructor(options?: RpcOptions) {
+    super(options)
+
+    this.broker = new EventBroker({ name: 'rpc' }) as any
+    this.instance = new RpcServer(this.options)
+  }
+
+  initialize(): RpcServer {
+    this.broker.on(GLAND_ROUTE_EVENT, (route) => {
+      this.instance.register(route.method, route.fullPath, async (req, res) => {
+        const ctx = new RpcContext(this.instance.broker, req, res)
+        // Attach the channel registry so ctx.call() can resolve names.
+        ctx.attachRegistry?.(this.broker.id as string, this.instance.registry)
+        return route.action(ctx)
+      })
+    })
+
+    return this.instance
+  }
+}
+```
+
+```ts title="src/main.ts"
+import { GlandFactory } from '@glandjs/core'
+import { RpcBroker } from './rpc/broker'
+import { AppModule } from './app.module'
+
+const app = await GlandFactory.create(AppModule)
+const server = app.connectTo(RpcBroker, { port: 4000 })
+server.listen()
+```
+
+The controllers are unchanged. That is the point.
+
+## A context for your transport
+
+Extend `Context` from `@glandjs/core` directly if you are not HTTP, or `HttpContext`
+if you are.
+
+```ts
+import { Context, type ContextState } from '@glandjs/core'
+import type { EventRecord } from '@glandjs/events'
+
+export class RpcContext<TEvents extends EventRecord> extends Context<TEvents> {
+  constructor(
+    broker: Broker<TEvents>,
+    readonly method: string,
+    readonly params: unknown,
+  ) {
+    super(broker)
+  }
+
+  reply(result: unknown, error?: unknown): this {
+    // Write the result back however your transport requires.
+    this.result = { result, error }
+    return this
+  }
+}
+```
+
+`Context` gives you `state`, `setState()`, `emit()`, `call()`, `on()`, `once()` and
+`off()` for free. The only thing you must supply is how a reply is written.
+
+## Reusing `@glandjs/http`
+
+If your transport is HTTP-shaped, extend `HttpCore` and `HttpBroker` instead of
+starting from scratch. `HttpContext` already implements the entire request and
+response surface against four abstract members.
+
+```ts
+import { HttpBroker, HttpCore, HttpServerAdapter } from '@glandjs/http'
+
+class MyCore<TEvents> extends HttpCore<Server, App, Request, Response> {
+  constructor(options?: MyOptions) {
+    super(new MyAdapter<TEvents>(), options)
+  }
+}
+
+class MyBroker<TEvents> extends HttpBroker<TEvents, MyCore<TEvents>, MyOptions> {
+  constructor(options?: MyOptions) {
+    super(new MyCore<TEvents>(options), options)
+  }
+}
+```
+
+This is exactly the shape `@glandjs/express` uses. See
+[`@glandjs/http`](/packages/http#httpserveradapter) for the abstract members you need
+to implement.
+
+## Checklist
+
+<Steps>
+
+1. **Extend `BrokerAdapter`.** Three generic parameters: `TEvents`, `TApp`,
+   `TOptions`.
+2. **Create your broker in the constructor.** `new EventBroker({ name: 'my-protocol' })`.
+3. **Subscribe to `GLAND_ROUTE_EVENT` in `initialize()`.** Register each route on your
+   application object.
+4. **Build a context.** Extend `Context`, or `HttpContext` for HTTP-shaped transports.
+5. **Wire the channel registry.** `ctx.attachRegistry(brokerId, registry)` is what
+   lets `ctx.call('product:list', …)` resolve a public event name. If you skip it,
+   `call` throws.
+6. **Return the application from `initialize()`.** Its type is what `connectTo()`
+   returns, so make it useful.
+
+</Steps>

@@ -1,0 +1,204 @@
+---
+title: Channels
+description: Channels are where side effects live. They subscribe to a namespaced event, do the work, and optionally return a result.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+A **channel** is a class that subscribes to events and performs side effects —
+persistence, outbound HTTP, cache invalidation, writing a response. It is the reason
+a controller stays free of business logic.
+
+## Defining a channel
+
+```ts
+import { Channel, On } from '@glandjs/common'
+
+@Channel('product')
+export class ProductChannel {
+  @On('viewed')
+  onViewed(payload: { id: string }) {
+    console.log(`viewed ${payload.id}`)
+  }
+}
+```
+
+`@Channel(namespace)` prefixes every `@On()` in the class. With `namespace = 'product'`
+and `@On('viewed')`, the public event name is **`product:viewed`**.
+
+The namespace is optional. `@Channel()` with no argument registers handlers under
+their bare `@On()` name.
+
+## Addressing rules
+
+| `@Channel` | `@On` | Public event name |
+| --- | --- | --- |
+| `@Channel('db')` | `@On('product:create')` | `db:product:create` |
+| `@Channel('db')` | `@On('create')` | `db:create` |
+| `@Channel()` | `@On('ping')` | `ping` |
+| `@Channel('a:b')` | `@On('c:d')` | `a:b:c:d` |
+
+<Aside type="caution" title="Names are global and must be unique">
+  The channel registry is global. If two channels both answer `db:create`, startup
+  fails with a `Duplicate channel event` error that names both classes — rather than
+  silently routing to whichever was discovered first.
+</Aside>
+
+## Returning a value
+
+A channel handler's return value is what `ctx.call()` resolves to. Declare it in the
+event map with `IOEvent<Payload, Return>`.
+
+```ts title="src/shared/events.interface.ts"
+import { IOEvent } from '@glandjs/events'
+
+export interface EventTypes {
+  'db:product:create': IOEvent<NewProduct, Promise<Product>>
+  'db:product:all': IOEvent<Record<string, never>, Promise<Product[]>>
+  'product:viewed': { id: string }   // plain type -> return is void
+}
+```
+
+```ts title="src/common/db.channel.ts" ins={3}
+import { Channel, On } from '@glandjs/common'
+
+@Channel('db')
+export class Database {
+  @On('product:create')
+  async createProduct(input: NewProduct): Promise<Product> {
+    return this.repository.insert(input)
+  }
+}
+```
+
+```ts
+// In a controller — the result is typed as Promise<Product>
+const product = await ctx.call('db:product:create', { name, price })
+```
+
+A plain (non-`IOEvent`) entry always has a `void` return, which is the right choice
+for fire-and-forget side effects.
+
+## Fan-out
+
+Several channels can answer the same event. `ctx.call()` returns the first
+registered handler's result; `ctx.call(event, payload, 'all')` returns an array of
+every result, in registration order.
+
+```ts
+// Every channel that answers 'product:created' runs.
+emitter.emit('product:created', { id })
+
+// Or collect them all.
+const results = await ctx.call('product:created', { id }, 'all')
+```
+
+<Aside type="note">
+  Wildcard subscriptions (`product:*`) reach `emit`, but they are **not** returned by
+  the call machinery — it walks the literal event name only. If you need a result,
+  register the exact event name.
+</Aside>
+
+## Handler arity
+
+A handler receives exactly one argument: the payload. Anything else the controller
+needs travels inside that payload, or on `ctx`.
+
+```ts
+@Channel('audit')
+export class AuditChannel {
+  @On('product:created')
+  async record(payload: { id: string; ctx?: unknown }) {
+    await this.sink.write(payload)
+  }
+}
+```
+
+Carrying the context in the payload is how you let a channel finish the reply:
+
+```ts
+export interface EventTypes {
+  'response:send': { ctx: ExpressContext<EventTypes>; body: unknown }
+}
+
+@Channel('response')
+export class ResponseChannel {
+  @On('send')
+  async send({ ctx, body }: EventTypes['response:send']) {
+    ctx.state.sentAt = Date.now()
+    return ctx.send(body, 200)
+  }
+}
+```
+
+## Where handlers live
+
+- A channel must be listed in a module's `channels` array.
+- Like controllers, only **own** prototype methods are discovered. Do not rely on
+  inherited `@On()` handlers.
+- One handler per event name per class — the metadata is keyed by method name on the
+  prototype, so two methods cannot both answer the same event.
+
+## Injecting into a channel
+
+Channels are instantiated by the container, so constructor parameters are resolved
+like any other provider.
+
+```ts
+import { Channel, On } from '@glandjs/common'
+import { Inject } from '@glandjs/common'
+import { Repository } from './repository'
+
+@Channel('db')
+export class Database {
+  constructor(private readonly repository: Repository) {}
+
+  @On('product:all')
+  all() {
+    return this.repository.findAll()
+  }
+}
+```
+
+When a parameter's type is erased by TypeScript — an interface, a union, a primitive
+— the container cannot infer it, so name the token explicitly.
+
+```ts
+export const LOGGER = Symbol('LOGGER')
+
+@Channel('audit')
+export class AuditChannel {
+  constructor(@Inject(LOGGER) private readonly logger: Logger) {}
+}
+```
+
+See [Dependency injection](/fundamentals/dependency-injection).
+
+## Runtime channels
+
+The broker also exposes a `channel()` method that returns a live channel object for
+namespacing at runtime — useful in tests and in code that composes event names
+dynamically.
+
+```ts
+const db = broker.channel('db')
+
+db.on('product:all', () => products)
+await db.call('product:all', {})
+db.channel('product').emit('created', { id })   // nested namespaces
+```
+
+## Lifecycle
+
+`onChannelInit()` runs after every channel is bound — the first hook at which a
+channel can safely call another one.
+
+```ts
+@Channel('db')
+export class Database implements OnChannelInit {
+  async onChannelInit() {
+    await this.connect()
+  }
+}
+```

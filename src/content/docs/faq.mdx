@@ -1,0 +1,145 @@
+---
+title: FAQ
+description: Common questions about Gland — stability, comparisons, testing, and the boundaries of the framework.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+## General
+
+### Is Gland production-ready?
+
+The core, the events package and the emitter are stable and used in production. The
+HTTP layer — `@glandjs/http` and `@glandjs/express` — is still at
+`1.0.0-beta`, and a few features are incomplete. Check the
+[Express caveats](/packages/express#notes-and-caveats) before depending on it.
+
+If you need a proven HTTP stack today, run Gland channels beside Express and keep
+Express for routing. The two compose without either one knowing about the other.
+
+### Why not just use NestJS?
+
+NestJS is a larger, more prescriptive framework. Gland makes a different trade: a much
+smaller surface, an event-first request model instead of method injection, and a
+transport boundary that is an explicit seam rather than an implicit one. The cost is
+less built-in tooling. See [Why Gland?](/introduction/why-gland) for a side-by-side.
+
+### Do I have to use the decorators?
+
+Yes, for controllers and channels. They are how the framework discovers your
+application — there is no naming convention and no config file. The underlying
+[`@glandjs/events`](/packages/events) and [`@glandjs/emitter`](/packages/emitter)
+packages have no decorators at all, and can be used standalone.
+
+### Can I use it with an existing Express app?
+
+Yes, and it is a supported migration path. Attach a broker, register your Gland
+channels, and leave your existing routes in place:
+
+```ts
+const app = await GlandFactory.create(AppModule)
+const server = app.connectTo(ExpressBroker)
+
+server.use(existingMiddleware)
+app.get('/legacy', legacyHandler)   // the raw Express app
+```
+
+### Which Node.js versions are supported?
+
+`>= 20.9.0`, with TypeScript `>= 5`.
+
+## Architecture
+
+### Where should business logic live?
+
+In channels. A controller reads the request, calls or emits an event, and replies. If
+you find yourself writing a database query in a controller, that belongs in a channel.
+
+### Can one event have multiple handlers?
+
+Yes. `ctx.call(event, payload, 'all')` returns every handler's result in registration
+order; without a strategy, the first result is returned. `emit` always runs every
+matching handler.
+
+<Aside type="caution">
+  Wildcard handlers are reached by `emit` but not by `call`, which looks up the exact
+  event name. If you need a result, register the exact name.
+</Aside>
+
+### Do modules form visibility boundaries?
+
+No. A controller can call any channel in the application, including one registered by a
+sibling module. Modules organise and bootstrap code — see
+[Modules](/fundamentals/modules).
+
+### Why is everything a singleton?
+
+Because the channel registry is built once at startup, and event resolution is a
+constant-time lookup into a frozen registry. Per-request instances would have to be
+created during dispatch, which is the thing the design avoids. Use
+[`ctx.state`](/getting-started/working-with-the-context#sharing-state) for per-request
+data.
+
+## Dependency injection
+
+### Do I need `@Inject` everywhere?
+
+No. Only where the constructor parameter's type is erased by TypeScript — interfaces,
+unions, primitives, symbols. A class parameter resolves from
+`design:paramtypes` on its own.
+
+### How do I break a circular dependency?
+
+Wrap one link in `forwardRef`. The container throws a `CircularDependencyError` that
+prints the full cycle, and tells you to break it this way. See
+[Dependency injection](/fundamentals/dependency-injection#breaking-circular-dependencies).
+
+## Testing
+
+### Do I need to boot a server to test?
+
+No. A channel is a plain class, so you can call its handler directly. A controller test
+asserts the events it emitted, using a small fake context. See
+[Testing](/guides/testing).
+
+### Which test runner?
+
+Any. Gland has no test dependencies of its own. The examples use Vitest, but Jest and
+`node:test` work equally well.
+
+## Events and the broker
+
+### Are events delivered exactly once?
+
+No. Dispatch is synchronous, in-process and at-most-once, by design. If a channel is
+not registered when an event is emitted, that event is lost. For durability, do the
+work in a channel that writes to a database or a message queue.
+
+### Is there a `once`?
+
+On the broker, yes. On [`@glandjs/emitter`](/packages/emitter#new-eventemitter), no —
+by design, which is part of how it stays under 2 KB. Wrap `on` if you need it.
+
+### What is `IOEvent` for?
+
+It declares both sides of a request/response event. `IOEvent<Payload, Return>` makes
+`ctx.call()` resolve to `Return`; a plain type means the return is `void`.
+
+### How do I know which events exist?
+
+`UnknownEventError` carries an `available` array of every valid channel event name.
+Set `GLAND_DEBUG=1` to see each channel binding logged at startup.
+
+## Performance
+
+### Is the framework the bottleneck?
+
+Usually not — database round trips and network latency dominate. See
+[Performance](/guides/performance) for where the time actually goes, and for the few
+options that matter.
+
+### Which options should I tune?
+
+`cacheSize` if a small set of events dominates your traffic, and `maxListeners` if more
+than five handlers legitimately answer one event. Nothing else is worth touching.

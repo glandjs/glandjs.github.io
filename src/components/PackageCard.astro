@@ -1,0 +1,111 @@
+---
+interface Props {
+  name: string
+  version: string
+  role: string
+  description: string
+  href: string
+  repo: string
+}
+
+const { name, version, role, description, href, repo } = Astro.props
+---
+
+<article class="package-card">
+  <header class="package-card__header">
+    <a href={href} class="package-card__name">{name}</a>
+    <span class="package-card__version">{version}</span>
+  </header>
+  <p class="package-card__role">{role}</p>
+  <p class="package-card__description">{description}</p>
+  <footer class="package-card__footer">
+    <a href={`https://www.npmjs.com/package/${name}`} target="_blank" rel="noopener noreferrer">
+      npm
+    </a>
+    <a href={repo} target="_blank" rel="noopener noreferrer">GitHub</a>
+  </footer>
+</article>
+
+<style>
+  .package-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1.1rem 1.25rem;
+    border-radius: var(--__gland-radius);
+    border: 1px solid var(--__gland-surface-border);
+    background-color: var(--__gland-surface);
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .package-card:hover {
+    border-color: color-mix(in oklab, var(--sl-color-accent) 45%, transparent);
+    background-color: var(--__gland-surface-hover);
+    transform: translateY(-2px);
+  }
+
+  .package-card__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .package-card__name {
+    font-family: var(--__gland-font-mono);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--sl-color-white);
+    text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+
+  .package-card__name:hover {
+    color: var(--sl-color-text-accent);
+  }
+
+  .package-card__version {
+    font-family: var(--__gland-font-mono);
+    font-size: 0.6875rem;
+    color: var(--sl-color-gray-3);
+    white-space: nowrap;
+  }
+
+  .package-card__role {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sl-color-text-accent);
+  }
+
+  .package-card__description {
+    margin: 0;
+    flex: 1 1 auto;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--sl-color-gray-2);
+    text-wrap: pretty;
+  }
+
+  .package-card__footer {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    font-family: var(--__gland-font-mono);
+  }
+
+  .package-card__footer a {
+    color: var(--sl-color-gray-3);
+    text-decoration: none;
+  }
+
+  .package-card__footer a:hover {
+    color: var(--sl-color-text-accent);
+  }
+</style>

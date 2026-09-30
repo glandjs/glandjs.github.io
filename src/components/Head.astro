@@ -1,0 +1,17 @@
+---
+/**
+ * Page head (Starlight `Head` override).
+ *
+ * Re-exports Starlight's own head — title, canonical, SEO tags — and adds Astro's
+ * client router, which is what makes page transitions animate.
+ *
+ * `Head` is overridden rather than extended because Starlight's override
+ * mechanism replaces the component outright, so the default has to be rendered
+ * explicitly.
+ */
+import StarlightHead from '@astrojs/starlight/components/Head.astro'
+import { ClientRouter } from 'astro:transitions'
+---
+
+<StarlightHead />
+<ClientRouter />

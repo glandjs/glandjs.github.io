@@ -1,0 +1,76 @@
+---
+/**
+ * Colour-scheme bootstrap (Starlight `ThemeProvider` override).
+ *
+ * Upstream resolves the theme as "stored preference, else follow the OS", which
+ * means a visitor with a light-mode operating system never sees Gland's dark
+ * UI. Gland is a dark-first product, so the fallback is flipped to `dark`.
+ *
+ * The three states are kept distinct:
+ *   null  — never chosen  -> dark
+ *   ''    — chose "auto"  -> follow the OS
+ *   dark  — explicit
+ *   light — explicit
+ *
+ * The `updatePickers()` contract is identical to upstream, because
+ * `ThemeSelect.astro` calls it and reads the `#theme-icons` template below.
+ */
+import { Icon } from '@astrojs/starlight/components'
+---
+
+{/* Intentionally inlined and first in <head>, so the theme is set before paint. */}
+<script is:inline>
+  window.StarlightThemeProvider = (() => {
+    const KEY = 'starlight-theme'
+
+    const read = () => {
+      try {
+        return localStorage.getItem(KEY)
+      } catch {
+        return null
+      }
+    }
+
+    const stored = read()
+
+    const prefersLight = () => window.matchMedia('(prefers-color-scheme: light)').matches
+
+    const resolve = () => {
+      if (stored === 'dark' || stored === 'light') return stored
+      // '' means the user explicitly picked "auto", so follow the OS.
+      if (stored === '') return prefersLight() ? 'light' : 'dark'
+      // Never chosen: Gland defaults to dark.
+      return 'dark'
+    }
+
+    document.documentElement.dataset.theme = resolve()
+
+    return {
+      /**
+       * Point every theme picker at the active theme. Defaults to the value the
+       * picker should *show*, which is `auto` only when the user picked it.
+       */
+      updatePickers(theme = stored === '' ? 'auto' : 'dark') {
+        document.querySelectorAll('starlight-theme-select').forEach((picker) => {
+          const select = picker.querySelector('select')
+          if (select) select.value = theme
+          /** @type {HTMLTemplateElement | null} */
+          const tmpl = document.querySelector('#theme-icons')
+          const newIcon = tmpl && tmpl.content.querySelector('.' + theme)
+          if (newIcon) {
+            const oldIcon = picker.querySelector('svg.label-icon')
+            if (oldIcon) {
+              oldIcon.replaceChildren(...newIcon.cloneNode(true).childNodes)
+            }
+          }
+        })
+      },
+    }
+  })()
+</script>
+
+<template id="theme-icons">
+  <Icon name="sun" class="light" />
+  <Icon name="moon" class="dark" />
+  <Icon name="laptop" class="auto" />
+</template>

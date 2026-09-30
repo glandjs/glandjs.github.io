@@ -1,53 +1,128 @@
 <p align="center">
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./public/dark-mode-image.png">
-  <source media="(prefers-color-scheme: light)" srcset="./public/light-mode-image.png">
-  <img alt="GlandJs - Documentation" src="./public/dask-mode-image.png">
-</picture>
+  <a href="https://glandjs.github.io" target="_blank"><img src="https://raw.githubusercontent.com/glandjs/glandjs.github.io/main/public/logo.svg" width="120" alt="Gland Logo" /></a>
 </p>
 
-# Gland Framework Documentation
+<h1 align="center">glandjs.github.io</h1>
 
-Welcome to the official documentation repository for Gland Framework. This site is your central resource for learning about Gland’s core concepts, architecture, and advanced topics—all designed to help you build scalable, modular, event-driven applications with ease.
+<p align="center">The official documentation website for the <a href="https://glandjs.github.io">Gland</a> framework.</p>
 
-> **Note:** This documentation is a work in progress. The site structure is still evolving, and we appreciate your feedback to improve its content and usability.
+---
 
-## Documentation Site
+A progressive, event-driven Node.js framework for building efficient and scalable
+server-side applications.
 
-Access the latest version of the documentation at:
-[https://glandjs.github.io/docs/](https://glandjs.github.io/docs/)
+Gland separates business intent from transport mechanics: controllers emit domain
+events, channels perform the side effects, and brokers carry the transport. The same
+modules then run over HTTP, WebSocket or RPC — only the adapter wiring changes.
+
+## Packages
+
+| Package | Version | Description |
+| --- | --- | --- |
+| [`@glandjs/core`](https://glandjs.github.io/packages/core/) | `1.0.3-beta` | DI container, module bootstrap, lifecycle hooks, `Context` |
+| [`@glandjs/common`](https://glandjs.github.io/packages/common/) | `1.0.3-beta` | `@Module`, `@Controller`, `@Channel`, `@On`, `@Inject` |
+| [`@glandjs/events`](https://glandjs.github.io/packages/events/) | `1.1.2` | Namespaced event broker, channels, mesh networking |
+| [`@glandjs/emitter`](https://glandjs.github.io/packages/emitter/) | `1.1.4` | Zero-dependency emitter — `on`, `off`, `emit` |
+| [`@glandjs/http`](https://glandjs.github.io/packages/http/) | `1.0.0-beta` | Route decorators, `HttpContext`, `HttpCore`, `HttpBroker` |
+| [`@glandjs/express`](https://glandjs.github.io/packages/express/) | `1.0.0-beta` | The Express 5 adapter |
+
+## Quick example
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express'
+import { AppModule } from './app.module'
+
+const app = await GlandFactory.create(AppModule)
+const server = app.connectTo(ExpressBroker)
+
+server.json()
+server.listen(3000)
+```
+
+```ts
+import { Controller } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+
+@Controller('products')
+export class ProductController {
+  @Get()
+  async list(ctx) {
+    return ctx.send({ products: await ctx.call('db:product:all', {}) })
+  }
+}
+```
+
+```ts
+import { Channel, On } from '@glandjs/common'
+
+@Channel('db')
+export class Database {
+  private products = new Map()
+
+  @On('product:all')
+  all() {
+    return Array.from(this.products.values())
+  }
+}
+```
+
+## This repository
+
+The documentation site. Built with
+[Astro](https://astro.build),
+[Starlight](https://starlight.astro.build) and Tailwind CSS 4.
+
+```bash
+corepack enable
+pnpm install
+pnpm dev      # http://localhost:4321
+```
+
+| Script | Does |
+| --- | --- |
+| `pnpm dev` | Start the dev server |
+| `pnpm build` | Build to `dist/` |
+| `pnpm preview` | Serve the production build |
+| `pnpm check` | `astro check` — types and templates |
+
+### Structure
+
+```text
+src/
+├── assets/          Logo and images
+├── components/      Astro components, incl. Starlight overrides
+├── content/docs/    The documentation (.mdx)
+├── data/            Sidebar order and package metadata
+├── layouts/         Custom page layouts
+└── styles/          global.css — the design system
+```
+
+### Tooling
+
+- **[psx](https://github.com/m-mdy-m/psx)** — structure and rule validation.
+  `psx.yml` is the source of truth for the required layout; `.psx-project.yml` is the
+  project identity.
+- **[gix](https://github.com/m-mdy-m/gix)** — the git-flow branch model, configured in
+  `.gix/config`.
+- **Dependabot** — weekly dependency updates, grouped by ecosystem.
+
+```bash
+psx check      # validate the project structure
+gix status     # where am I in the flow?
+```
 
 ## Contributing
 
-We welcome contributions to the Gland documentation! If you find an issue, typo, or have a suggestion to improve the documentation, please follow these steps:
+See [CONTRIBUTING.md](./CONTRIBUTING.md). The most useful contribution is usually a
+correction to a code sample or a missing caveat — please
+[open an issue](https://github.com/glandjs/glandjs.github.io/issues/new/choose) or a
+pull request.
 
-1. **Fork the repository** and clone it to your local machine.
-2. **Create a new branch** for your changes.
-3. **Commit your changes** with clear and concise messages.
-4. **Open a pull request (PR)** with a description of the changes and reference any related issues.
-
-For more details on how to contribute, please refer to our [Contributing Guide](./docs/CONTRIBUTING.md).
-
-## Reporting Issues
-
-If you find a bug or an issue with the documentation, please open an issue on the [GitHub issues page](https://github.com/glandjs/gland/issues). When reporting an issue, make sure to provide as much detail as possible to help us quickly address it. You can use our issue templates for consistency and completeness:
-
-- [Bug Report](.github/ISSUE_TEMPLATE/bug_report.yml)
-- [Feature Request](.github/ISSUE_TEMPLATE/feature_request.yml)
-- [Documentation Issue](.github/ISSUE_TEMPLATE/documentation_improvement.yml)
-
-## Code of Conduct
-
-We expect all contributors to follow our [Code of Conduct](./docs/CODE_OF_CONDUCT.md). Please treat everyone with respect and kindness, and help maintain a welcoming and professional environment for all.
-
-## Community
-
-Join our community to discuss Gland, ask questions, and share your ideas:
-
-- **Discord:** [Join the Gland Community](https://discord.gg/nSMaEXkMUz)
-- **GitHub Issues:** [Report an Issue](https://github.com/glandjs/gland/issues)
-- **Stack Overflow:** Ask questions with the `gland` tag on [Stack Overflow](https://stackoverflow.com/questions/tagged/gland)
+Documentation text for the package changelogs and API references is mirrored from the
+source repositories rather than written here. See
+[Mirroring upstream content](./CONTRIBUTING.md#mirroring-upstream-content).
 
 ## License
 
-Gland is licensed under the [MIT License](LICENSE).
+[MIT](./LICENSE) © Mahdi

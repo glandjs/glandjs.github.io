@@ -1,226 +1,91 @@
+// @ts-check
 import { defineConfig } from 'astro/config'
 import starlight from '@astrojs/starlight'
-import tailwind from '@astrojs/tailwind'
+import tailwindcss from '@tailwindcss/vite'
 
+import { sidebar } from './src/data/sidebar.mjs'
+
+// https://astro.build/config
 export default defineConfig({
   site: 'https://glandjs.github.io',
   base: '/',
+  trailingSlash: 'ignore',
+  build: { format: 'directory' },
+
+  // Client-side navigation with Astro's view transitions.
   integrations: [
-    tailwind({
-      applyBaseStyles: false,
-    }),
     starlight({
       title: 'Gland',
-      social: {
-        github: 'https://github.com/glandjs/docs',
-        discord: 'https://discord.gg/glandjs',
-        npm: 'https://www.npmjs.com/package/@glandjs/core',
+      titleDelimiter: '|',
+      description:
+        'Gland is a lightweight, event-driven and protocol-agnostic framework for Node.js. Build modular, testable backends with controllers, channels and brokers.',
+
+      logo: {
+        src: './src/assets/gland-logo.svg',
+        alt: 'Gland',
+        replacesTitle: false,
       },
-      expressiveCode: {
-        themes: ['github-dark-default'],
-        styleOverrides: {
-          borderRadius: '0.5rem',
+      favicon: '/favicon.svg',
+
+      social: [
+        {
+          icon: 'github',
+          label: 'GitHub',
+          href: 'https://github.com/glandjs/glandjs.github.io',
         },
+        { icon: 'discord', label: 'Discord', href: 'https://discord.gg/glandjs' },
+      ],
+
+      editLink: {
+        baseUrl: 'https://github.com/glandjs/glandjs.github.io/edit/main/',
       },
-      customCss: ['@styles/tailwind.css'],
+
+      customCss: ['./src/styles/global.css'],
+
       components: {
+        // Renders Starlight's head plus Astro's <ClientRouter />, so page
+        // transitions can be animated.
+        Head: '@components/Head.astro',
+        // Same component, but with dark as the default colour scheme.
+        ThemeProvider: '@components/ThemeProvider.astro',
         Header: '@components/Header.astro',
-        ContentPanel: '@components/ContentPanel.astro',
         PageTitle: '@components/PageTitle.astro',
+        ContentPanel: '@components/ContentPanel.astro',
+        Footer: '@components/Footer.astro',
       },
+
+      expressiveCode: {
+        themes: ['github-light', 'github-dark-high-contrast'],
+        styleOverrides: {
+          borderRadius: '0.65rem',
+          codeFontFamily: 'var(--font-mono)',
+          codeFontSize: '0.875rem',
+          frames: {
+            editorActiveTabIndicatorTopColor: 'transparent',
+            frameBoxShadowCssValue: 'none',
+          },
+        },
+        defaultProps: { wrap: true },
+      },
+
       head: [
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'preconnect',
-            href: 'https://fonts.googleapis.com',
-          },
-        },
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'preconnect',
-            href: 'https://fonts.gstatic.com',
-            crossorigin: 'anonymous',
-          },
-        },
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'stylesheet',
-            href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap',
-          },
-        },
-        {
-          tag: 'link',
-          attrs: {
-            rel: 'stylesheet',
-            href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap',
-          },
-        },
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' } },
+        // Keep the browser chrome in step with the active theme.
+        { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#0a0a0f' } },
+        { tag: 'meta', attrs: { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#ffffff' } },
+        { tag: 'meta', attrs: { name: 'color-scheme', content: 'dark light' } },
       ],
-      sidebar: [
-        {
-          label: 'Introduction',
-          collapsed: false,
-          items: [
-            {
-              label: 'Getting Started',
-              link: '/documentation/getting-started',
-            },
-            {
-              label: 'Installation',
-              link: '/documentation/installation',
-            },
-            {
-              label: 'Quickstart',
-              link: '/documentation/quickstart',
-            },
-          ],
-        },
-        {
-          label: 'Core Concepts',
-          collapsed: false,
-          items: [
-            {
-              label: 'Event-Driven Architecture',
-              link: '/concepts/event-driven',
-            },
-            {
-              label: 'Channels',
-              link: '/concepts/channels',
-            },
-            {
-              label: 'Controllers',
-              link: '/concepts/controllers',
-            },
-            {
-              label: 'Modules',
-              link: '/concepts/modules',
-            },
-          ],
-        },
-        {
-          label: 'Guides',
-          collapsed: true,
-          items: [
-            {
-              label: 'Basic Usage',
-              link: '/guides/basic-usage',
-            },
-            {
-              label: 'Dependency Injection',
-              link: '/guides/dependency-injection',
-            },
-            {
-              label: 'Advanced Features',
-              link: '/guides/advanced-features',
-            },
-            {
-              label: 'Best Practices',
-              link: '/guides/best-practices',
-            },
-          ],
-        },
-        {
-          label: 'Packages',
-          collapsed: false,
-          items: [
-            {
-              label: 'Emitter',
-              collapsed: false,
-              items: [
-                {
-                  label: 'Introduction',
-                  link: '/packages/emitter',
-                },
-                {
-                  label: 'Changelog',
-                  link: '/packages/emitter/changelog',
-                },
-              ]
-            },
-            {
-              label: 'Events',
-              collapsed: false,
-              items: [
-                {
-                  label: 'Introduction',
-                  link: '/packages/events',
-                },
-                {
-                  label: 'Changelog',
-                  link: '/packages/events/changelog',
-                },
-              ]
-            },
-          ],
-        },
-        {
-          label: 'HTTP Integration',
-          collapsed: true,
-          items: [
-            {
-              label: 'Express Integration',
-              link: '/http/express',
-            },
-            {
-              label: 'Fastify Integration',
-              link: '/http/fastify',
-            },
-            {
-              label: 'Custom Integrations',
-              link: '/http/custom',
-            },
-          ],
-        },
-        {
-          label: 'API Reference',
-          collapsed: true,
-          items: [
-            {
-              label: 'Core API',
-              link: '/api/core',
-            },
-            {
-              label: 'Utilities',
-              link: '/api/utilities',
-            },
-            {
-              label: 'Configuration',
-              link: '/api/configuration',
-            },
-            {
-              label: 'Decorators',
-              link: '/api/decorators',
-            },
-          ],
-        },
-        {
-          label: 'Resources',
-          collapsed: true,
-          items: [
-            {
-              label: 'FAQ',
-              link: '/resources/faq',
-            },
-            {
-              label: 'Examples',
-              link: '/resources/examples',
-            },
-            {
-              label: 'Community',
-              link: '/resources/community',
-            },
-            {
-              label: 'Contributing',
-              link: '/resources/contributing',
-            },
-          ],
-        },
-      ],
+
       lastUpdated: true,
       pagination: true,
+      credits: false,
+      tableOfContents: { minHeadingLevel: 2, maxHeadingLevel: 3 },
+
+      sidebar,
     }),
   ],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
 })

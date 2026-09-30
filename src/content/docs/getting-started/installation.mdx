@@ -1,0 +1,146 @@
+---
+title: Installation
+description: Install the Gland packages you need, configure TypeScript, and verify the toolchain.
+---
+
+import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components'
+
+
+## Requirements
+
+| | |
+| --- | --- |
+| Node.js | `>= 20.9.0` |
+| TypeScript | `>= 5.0` |
+| Package manager | pnpm (recommended), npm or Yarn |
+
+Gland relies on `reflect-metadata` for decorator metadata, and on `experimentalDecorators`
+plus `emitDecoratorMetadata` from TypeScript. Both are set up for you below.
+
+## Create a project
+
+<Steps>
+
+1. **Scaffold a TypeScript project.**
+
+   ```bash
+   mkdir my-app && cd my-app
+   pnpm init
+   ```
+
+2. **Install the runtime packages.**
+
+   For an HTTP application with the Express adapter:
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+       ```bash
+       pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express
+       ```
+     </TabItem>
+     <TabItem label="npm">
+       ```bash
+       npm install @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express
+       ```
+     </TabItem>
+     <TabItem label="yarn">
+       ```bash
+       yarn add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express
+       ```
+     </TabItem>
+   </Tabs>
+
+   <Aside type="tip" title="Only install what you use">
+     `@glandjs/core`, `@glandjs/common` and `@glandjs/events` are the framework.
+     `@glandjs/http` and `@glandjs/express` are only needed if you serve HTTP.
+     Drop them and you have a transport-agnostic event application.
+   </Aside>
+
+3. **Install the toolchain and `reflect-metadata`.**
+
+   `reflect-metadata` is a peer dependency of `@glandjs/core` and `@glandjs/common`:
+
+   <Tabs syncKey="pkg">
+     <TabItem label="pnpm">
+       ```bash
+       pnpm add -D typescript @types/node
+       pnpm add reflect-metadata
+       ```
+     </TabItem>
+     <TabItem label="npm">
+       ```bash
+       npm install -D typescript @types/node
+       npm install reflect-metadata
+       ```
+     </TabItem>
+     <TabItem label="yarn">
+       ```bash
+       yarn add -D typescript @types/node
+       yarn add reflect-metadata
+       ```
+     </TabItem>
+   </Tabs>
+
+4. **Configure `tsconfig.json`.**
+
+   The three options below are required. `useDefineForClassFields` must be `false`, or
+   decorator metadata is lost.
+
+   ```json title="tsconfig.json"
+   {
+     "compilerOptions": {
+       "target": "ES2022",
+       "module": "NodeNext",
+       "moduleResolution": "NodeNext",
+       "strict": true,
+       "experimentalDecorators": true,
+       "emitDecoratorMetadata": true,
+       "useDefineForClassFields": false,
+       "skipLibCheck": true,
+       "outDir": "dist"
+     },
+     "include": ["src"]
+   }
+   ```
+
+5. **Verify the installation.**
+
+   ```ts title="src/main.ts"
+   import 'reflect-metadata'
+   import { EventBroker } from '@glandjs/events'
+
+   const broker = new EventBroker({ name: 'smoke-test' })
+   broker.on('ping', (payload) => console.log(payload))
+   broker.emit('ping', { ok: true })
+   ```
+
+   ```bash
+   npx tsc && node dist/main.js
+   # { ok: true }
+   ```
+
+</Steps>
+
+## Package reference
+
+| Package | What it gives you | Install it if |
+| --- | --- | --- |
+| [`@glandjs/core`](/packages/core) | DI container, module bootstrap, lifecycle hooks, `Context` | always |
+| [`@glandjs/common`](/packages/common) | `@Module`, `@Controller`, `@Channel`, `@On`, `@Inject` | always |
+| [`@glandjs/events`](/packages/events) | `EventBroker`, channels, mesh networking, `IOEvent` | always |
+| [`@glandjs/http`](/packages/http) | Route decorators, `HttpContext`, `HttpCore`, `HttpBroker` | you serve HTTP |
+| [`@glandjs/express`](/packages/express) | The Express 5 adapter | you use Express |
+| [`@glandjs/emitter`](/packages/emitter) | Standalone zero-dependency event emitter | you want a pub/sub primitive without the framework |
+
+## Optional extras
+
+Some adapter features load their dependency lazily and will tell you if it is
+missing.
+
+```bash
+pnpm add cors          # required by app.enableCors()
+```
+
+## Next
+
+[First steps](/getting-started/first-steps) walks through building a working API.

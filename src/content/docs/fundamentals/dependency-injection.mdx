@@ -1,0 +1,210 @@
+---
+title: Dependency injection
+description: Constructor injection, injection tokens, forwardRef, and the errors the container raises when it cannot resolve a parameter.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+Gland's container is deliberately small. There is no `@Injectable()`, no
+`providers` array and no property injection — **everything listed in a module's
+`controllers` or `channels` is a provider**, created once and injected wherever it is
+needed.
+
+## Constructor injection
+
+The container resolves each constructor parameter in this order:
+
+1. An explicit `@Inject(token)` — or `@Inject(forwardRef(() => Token))`.
+2. The emitted `design:paramtypes` metadata, i.e. the declared class type.
+
+```ts title="src/modules/product/product.channel.ts"
+import { Channel, On } from '@glandjs/common'
+import { ProductRepository } from './product.repository'
+import { Mailer } from '../shared/mailer'
+
+@Channel('product')
+export class ProductChannel {
+  constructor(
+    private readonly repository: ProductRepository,
+    private readonly mailer: Mailer,
+  ) {}
+
+  @On('created')
+  async notify(id: string) {
+    await this.mailer.send(`Product ${id} created`)
+  }
+}
+```
+
+Both parameters are classes registered in the graph, so both resolve by type.
+
+<Aside type="caution" title="This is why tsconfig matters">
+  Type-based resolution depends on `emitDecoratorMetadata: true`. Without it there is
+  no `design:paramtypes` to read and the container will tell you so.
+</Aside>
+
+## Injection tokens
+
+TypeScript erases interfaces, unions, primitives and symbols to `Object` in emitted
+metadata, so the container has nothing to go on. Name the token with `@Inject`.
+
+```ts
+import { Inject } from '@glandjs/common'
+
+export const LOGGER = Symbol('LOGGER')
+export type Logger = (message: string, meta?: unknown) => void
+
+@Channel('audit')
+export class AuditChannel {
+  constructor(@Inject(LOGGER) private readonly logger: Logger) {}
+}
+```
+
+A token may be a class, a `string`, a `symbol` or any function.
+
+```ts
+type InjectionToken<T = any> = string | symbol | Constructor<T> | Function
+```
+
+Register a non-class token by listing a class that injects it somewhere in the graph.
+The class itself is the registration point.
+
+```ts
+export const DEFAULT_TIMEOUT = 'DEFAULT_TIMEOUT'
+
+@Channel('cache')
+export class CacheChannel {
+  constructor(@Inject(DEFAULT_TIMEOUT) private readonly timeout: number) {}
+}
+```
+
+<Aside type="note">
+  String and symbol tokens can only be reached through `@Inject`. The container
+  throws a clear error if you try to resolve one directly, because there is no class
+  to instantiate.
+</Aside>
+
+## Breaking circular dependencies
+
+Two classes that inject each other are a genuine cycle, and the container will refuse
+it with a `CircularDependencyError` that prints the path.
+
+```ts
+// Throws: Cannot resolve circular dependency:
+//            a -> b -> a
+class A {
+  constructor(private b: B) {}
+}
+class B {
+  constructor(private a: A) {}
+}
+```
+
+Break the cycle on **at least one** link with `forwardRef`, which defers the lookup
+until the cycle is already being resolved.
+
+```ts
+import { Inject, forwardRef } from '@glandjs/common'
+
+class A {
+  constructor(@Inject(forwardRef(() => B)) private b: B) {}
+}
+
+class B {
+  constructor(private a: A) {}
+}
+```
+
+`forwardRef(fn)` returns `{ forwardRef: true, resolve: fn }`. The callback is
+invoked lazily, so it is safe for the class to still be mid-construction.
+
+## Error messages
+
+The container explains what it could not do rather than failing with a
+`TypeError`.
+
+### Missing decorator metadata
+
+```text
+Cannot resolve constructor parameter #0 of "ProductChannel".
+  Enable "emitDecoratorMetadata" in tsconfig.json, or annotate the parameter
+  with @Inject(token).
+```
+
+### Type erased by the compiler
+
+```text
+Cannot resolve constructor parameter #0 of "AuditChannel".
+  Annotate it with @Inject(Token) so the container knows what to build.
+```
+
+### Unresolvable token
+
+```text
+Cannot resolve constructor parameter #0 of "ProductChannel".
+  ProductRepository is not registered. List it in a module's controllers or
+  channels array.
+```
+
+### Circular dependency
+
+```text
+Cannot resolve circular dependency:
+  AuthChannel
+  -> TokenChannel
+  -> AuthChannel
+
+Break the cycle with @Inject(forwardRef(() => Token)) on at least one link.
+```
+
+## Scoping
+
+Every provider is a **singleton** for the lifetime of the application. There is no
+request scope, because a request-scoped instance would have to be created per
+interaction — and the channel registry is built once at startup, precisely so that
+resolution is a constant-time lookup.
+
+If you need per-request data, use [`ctx.state`](/getting-started/working-with-the-context#sharing-state).
+
+## Programmatic API
+
+The container is exported if you need it directly — for a test harness, or for
+tooling that needs to inspect the graph.
+
+```ts
+import { Container, DependenciesScanner } from '@glandjs/core'
+
+const container = new Container()
+await container.register(AppModule)
+
+container.has(Repository)      // true once registered
+container.resolve(Repository)  // the singleton instance
+container.moduleContainer      // ModulesContainer, a Map<token, ModuleRef>
+```
+
+```ts
+import { Explorer, DiscoveryService, LifecycleScanner } from '@glandjs/core'
+
+const explorer = new Explorer(container.moduleContainer)
+explorer.exploreControllers()
+explorer.exploreChannels()
+
+const discovery = new DiscoveryService(container.moduleContainer)
+discovery.getControllers(PATH_METADATA)
+```
+
+## Metadata keys
+
+`@Inject` writes to a sparse array on the class constructor under `__inject__`. The
+other decorators use the keys below, which are all exported from `@glandjs/common`
+and are worth knowing if you write tooling.
+
+| Key | Constant | Written by | Stored on |
+| --- | --- | --- | --- |
+| `'path'` | `PATH_METADATA` | `@Controller`, `@Channel` | the class constructor |
+| `'method'` | `METHOD_METADATA` | `@On` | the prototype, keyed by method |
+| `'__module__'` | `MODULE_METADATA` | `@Module` | the class constructor |
+| `'__inject__'` | `INJECT_METADATA` | `@Inject` | the class constructor |
+| `'gland:define:route'` | `GLAND_ROUTE_EVENT` | the binder | a framework event |
+| `'gland:define:channel'` | `GLAND_CHANNEL_EVENT` | the binder | a framework event prefix |

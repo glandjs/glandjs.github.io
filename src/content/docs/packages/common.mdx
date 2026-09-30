@@ -1,0 +1,269 @@
+---
+title: '@glandjs/common'
+badge: '@glandjs/common@1.0.3-beta'
+description: The decorators, metadata keys and helpers that make up the Gland DSL — Module, Controller, Channel, On and Inject.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+`@glandjs/common` holds everything declarative: the five decorators, the metadata
+keys they write, the interfaces they consume, and a handful of path and registry
+helpers. It is a peer dependency of `@glandjs/core`, so it is almost always installed
+alongside it.
+
+```bash
+pnpm add @glandjs/common
+```
+
+<Aside type="note">
+  Importing the package has a side effect: its barrel imports `reflect-metadata`, so
+  decorator metadata is available as soon as anything from `@glandjs/common` is
+  loaded. You can still `import 'reflect-metadata'` first for explicitness.
+</Aside>
+
+## Decorators
+
+There are exactly five.
+
+### `@Module(metadata)`
+
+Marks a class as a composition boundary and writes `MODULE_METADATA` to its
+constructor.
+
+```ts
+@Module({
+  imports: [ProductModule],
+  controllers: [ProductController],
+  channels: [ProductChannel],
+})
+export class AppModule {}
+```
+
+```ts
+interface ModuleMetadata<T = any> {
+  imports?: ImportableModule<T>[]
+  controllers?: Constructor<T>[]
+  channels?: Constructor<T>[]
+}
+
+type ImportableModule<T = any> =
+  | Constructor<T>
+  | DynamicModule<T>
+  | Promise<DynamicModule<T>>
+```
+
+A `DynamicModule` extends a decorated module at import time; its `controllers` and
+`channels` merge with the base's and its `imports` are added alongside.
+
+```ts
+interface DynamicModule<T = any> {
+  module: Constructor<any>
+  controllers?: Constructor<T>[]
+  channels?: Constructor<T>[]
+  imports?: ImportableModule<T>[]
+}
+```
+
+### `@Controller(path = '/')`
+
+Writes `PATH_METADATA` to the class constructor, setting the route prefix for every
+handler in the class.
+
+```ts
+@Controller('products')
+export class ProductController {
+  @Get()       list(ctx) {}      // GET /products
+  @Get(':id')  getOne(ctx) {}    // GET /products/:id
+}
+```
+
+### `@Channel(namespace?)`
+
+Writes `PATH_METADATA` to the class constructor, using `namespace ?? ''`. The
+namespace prefixes every `@On()` in the class.
+
+```ts
+@Channel('db')
+export class Database {
+  @On('product:create') create(input: NewProduct) {}   // db:product:create
+}
+```
+
+Channel names must be globally unique; a collision fails at bind time.
+
+### `@On(event: string)`
+
+Writes `METHOD_METADATA` to the **prototype**, keyed by method name. The handler
+receives one argument: the payload.
+
+```ts
+@Channel('product')
+export class ProductChannel {
+  @On('viewed')
+  onViewed(payload: { id: string }) {
+    console.log(payload.id)
+  }
+}
+```
+
+### `@Inject(token)`
+
+A parameter decorator. Writes a sparse array of tokens to `INJECT_METADATA` on the
+class constructor, indexed by parameter position.
+
+```ts
+export const LOGGER = Symbol('LOGGER')
+
+@Channel('audit')
+export class AuditChannel {
+  constructor(@Inject(LOGGER) private readonly logger: Logger) {}
+}
+```
+
+Throws if applied to anything other than a constructor parameter.
+
+## Circular dependencies
+
+```ts
+import { Inject, forwardRef } from '@glandjs/common'
+
+interface ForwardRef<T = unknown> {
+  readonly forwardRef: true
+  resolve(): T | InjectionToken
+}
+
+function forwardRef<T>(tokenFn: () => T | InjectionToken): ForwardRef<T>
+function isForwardRef(value: unknown): value is ForwardRef
+```
+
+`forwardRef` defers resolution to a callback, which is how a cycle is broken. See
+[Dependency injection](/fundamentals/dependency-injection#breaking-circular-dependencies).
+
+## Types
+
+```ts
+type Constructor<T = any> = new (...args: any[]) => T   // from @medishn/toolkit
+type InjectionToken<T = any> = string | symbol | Constructor<T> | Function
+type ImportableModule<T = any> = Constructor<T> | DynamicModule<T> | Promise<DynamicModule<T>>
+```
+
+## Metadata keys
+
+Every constant the framework uses to store and read decorator output. Exported so
+tooling can inspect a compiled application.
+
+```ts
+export const PATH_METADATA = 'path'
+export const METHOD_METADATA = 'method'
+export const MODULE_METADATA = '__module__'
+export const INJECT_METADATA = '__inject__'
+export const GLAND_ROUTE_EVENT = 'gland:define:route'
+export const GLAND_CHANNEL_EVENT = 'gland:define:channel'
+```
+
+Where each one lives matters, because discovery depends on it.
+
+| Key | Stored on | Written by | Read by |
+| --- | --- | --- | --- |
+| `PATH_METADATA` | the class constructor | `@Controller`, `@Channel` | `Explorer` |
+| `METHOD_METADATA` | the method function | `@Get` / `@Post` (in `@glandjs/http`) | `Explorer` |
+| `METHOD_METADATA` | the prototype, by method name | `@On` | `Explorer` |
+| `MODULE_METADATA` | the class constructor | `@Module` | `Container` |
+| `INJECT_METADATA` | the class constructor | `@Inject` | `Container` |
+
+## Framework event payloads
+
+```ts
+interface GlandRoute<TContext = any> {
+  readonly path: string        // the handler's own path, e.g. ':id'
+  readonly fullPath: string    // the qualified route, e.g. '/products/:id'
+  readonly method: string      // UPPER-CASE, e.g. 'GET'
+  readonly action: (ctx: TContext) => unknown
+}
+
+interface GlandEvents {
+  [GLAND_ROUTE_EVENT]: GlandRoute
+  [key: `${typeof GLAND_CHANNEL_EVENT}:${string}`]: unknown
+  [key: string]: unknown
+}
+
+interface GlandContextState {
+  readonly brokerId?: string
+  readonly channel?: Readonly<Record<string, string>>
+}
+```
+
+## Helpers
+
+These are the functions the binder and the container are built from. They are public,
+so you can reuse them when you write a broker or a test harness.
+
+```ts
+// Paths
+function normalizePath(path?: string): string
+//   normalizePath()             -> '/'
+//   normalizePath('products')   -> '/products'
+//   normalizePath('/products/') -> '/products'
+//   normalizePath('api//v1//')  -> '/api/v1'
+
+function combineRoutePath(basePath?: string, handlerPath?: string): string
+//   combineRoutePath('/products', ':id') -> '/products/:id'
+//   combineRoutePath('products',  '/')   -> '/products'
+
+function isDynamicModule(module: unknown): module is { module: unknown } & Record<string, unknown>
+```
+
+```ts
+// Event names
+function buildPublicEventName(namespace: string | undefined, event: string): string
+//   'db' + 'product:create' -> 'db:product:create'
+
+function buildChannelEventName(namespace: string | undefined, event: string): string
+//   'db' + 'product:create' -> 'gland:define:channel:db:product:create'
+```
+
+```ts
+// The channel registry
+interface ChannelBinding {
+  readonly namespace: string   // from @Channel, or ''
+  readonly event: string       // from @On
+  readonly publicName: string  // 'db:product:create'  — what callers use
+  readonly fullName: string    // the internal event name
+  readonly owner: string       // the channel class name
+}
+
+type ChannelRegistry = Readonly<Record<string, string>>
+
+class ChannelRegistryBuilder {
+  add(namespace: string | undefined, event: string, owner: string): ChannelBinding
+  all(): ChannelBinding[]
+  freeze(): ChannelRegistry
+}
+```
+
+`add()` throws on a duplicate public name:
+
+```text
+Duplicate channel event "db:create".
+  already declared by: Database (gland:define:channel:db:create)
+  redeclared by:        Cache
+Every channel event must be globally unique. Rename the namespace or the @On() event.
+```
+
+`freeze()` returns a null-prototype, deeply frozen object that every request context
+shares by reference.
+
+## Optional dependencies
+
+```ts
+class MissingDependencyError extends Error {
+  constructor(readonly packageName: string, reason: string)
+  // message: The "cors" package is missing. Install it to take advantage of CORS support.
+}
+
+function loadPackage<T = unknown>(packageName: string, reason: string, loaderFn?: () => T): T
+```
+
+Used by adapters for features that are opt-in. It throws rather than calling
+`process.exit()`, so the caller can degrade gracefully.

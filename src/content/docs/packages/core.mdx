@@ -1,0 +1,295 @@
+---
+title: '@glandjs/core'
+badge: '@glandjs/core@1.0.3-beta'
+description: The runtime — dependency-injection container, module bootstrap, lifecycle hooks, the Context base class and the BrokerAdapter seam.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+`@glandjs/core` is the framework runtime. It contains the DI container, the module
+bootstrap pipeline, the lifecycle scanner, the `Context` base class and the
+`BrokerAdapter` abstraction that protocol adapters implement.
+
+It knows nothing about HTTP, sockets or any other transport.
+
+```bash
+pnpm add @glandjs/core
+```
+
+## The project's framing
+
+> A progressive, event-driven Node.js framework for building efficient and scalable
+> server-side applications.
+
+Gland is a lightweight, extensible framework built for modern JavaScript and TypeScript
+applications. Inspired by Angular and NestJS, it combines an object-oriented design
+pattern, minimalistic dependency injection, and powerful event-driven communication.
+
+> The simplicity of Gland lies not in the absence of features, but in how it allows
+> developers to shape their applications with minimal friction and clear intentions.
+> It strives to be a framework that adapts to the developer's needs, not the other way
+> around.
+
+Rather than relying on predefined conventions or imposing rigid structures, Gland lets
+you focus on the problem domain without unnecessary constraints. Communication between
+components stays straightforward and flexible, and the system remains easy to extend as
+requirements evolve.
+
+
+## `GlandFactory`
+
+The entry point. One static method.
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { AppModule } from './app.module'
+
+const app = await GlandFactory.create(AppModule)
+```
+
+### `static create(root: Constructor): Promise<GlandBroker>`
+
+Runs the whole bootstrap pipeline described in
+[Architecture](/introduction/architecture#the-bootstrap-sequence) and resolves with a
+`GlandBroker`.
+
+<Aside type="tip" title="Debug output">
+  Set the `GLAND_DEBUG` environment variable to log every bootstrap step. The logger
+  is only threaded through the internals when it is set, so production runs stay
+  silent.
+</Aside>
+
+## `GlandBroker`
+
+The application object. Two members, no more.
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `broker` | `TGlandBroker` | The underlying `Broker<GlandEvents>`, for framework-level observation. |
+| `connectTo(AdapterClass, options?)` | `<TApp>(...) => TApp` | Attach a protocol broker and return the transport application. |
+
+<Aside type="note">
+  `GlandBroker` is the return type of `create()` but is not itself exported from the
+  package's barrel — you get it through inference. There is no `listen()`, `close()`
+  or `use()` on it; those belong to the adapter you attach.
+</Aside>
+
+```ts
+import type { EventRecord } from '@glandjs/events'
+
+connectTo<TEvents extends EventRecord, TApp, TOptions>(
+  AdapterClass: BrokerAdapterClass<TEvents, TApp, TOptions>,
+  options?: TOptions,
+): TApp
+```
+
+```ts
+const app = await GlandFactory.create(AppModule)
+const server = app.connectTo(ExpressBroker<EventTypes>)
+server.json()
+server.listen(3000)
+```
+
+## `BrokerAdapter`
+
+The base class for every protocol adapter. Extend it to teach Gland a new transport.
+
+```ts
+import { BrokerAdapter, type BrokerAdapterClass } from '@glandjs/core'
+
+export abstract class BrokerAdapter<TEvents, TApp, TOptions> {
+  public broker: TEvents & TGlandBroker
+  public instance: TApp
+  constructor(protected readonly options?: TOptions) {}
+  public abstract initialize(): TApp
+}
+
+export type BrokerAdapterClass<TEvents, TApp, TOptions> =
+  Constructor<BrokerAdapter<TEvents, TApp, TOptions>>
+```
+
+| Member | Type | Description |
+| --- | --- | --- |
+| `broker` | `TEvents & TGlandBroker` | The adapter's own broker. Assign it in your constructor. |
+| `instance` | `TApp` | The transport application object. |
+| `initialize()` | `TApp` | Build the application, subscribe to routes, return it. |
+| `options` | `TOptions \| undefined` | `protected` — the options passed to `connectTo`. |
+
+A minimal adapter:
+
+```ts
+import { BrokerAdapter, GLAND_ROUTE_EVENT } from '@glandjs/core'
+import { EventBroker, type EventRecord } from '@glandjs/events'
+
+export interface MyOptions { port?: number }
+
+export class MyBroker<TEvents extends EventRecord> extends BrokerAdapter<
+  TEvents, MyServer, MyOptions
+> {
+  constructor(options?: MyOptions) {
+    super(options)
+    this.broker = new EventBroker({ name: 'my-protocol' }) as any
+    this.instance = new MyServer()
+  }
+
+  initialize(): MyServer {
+    this.broker.on(GLAND_ROUTE_EVENT, (route) => {
+      this.instance.handle(route.method, route.fullPath, route.action)
+    })
+    return this.instance
+  }
+}
+```
+
+## `Context`
+
+The base class every transport context extends. It supplies the event methods and the
+per-interaction state bag.
+
+```ts
+class Context<TEvents extends EventRecord> {
+  constructor(protected readonly broker: Broker<TEvents>)
+
+  error?: unknown
+  get state(): ContextState
+  set state(data: ContextState)      // merges, never replaces
+  setState(data: ContextState): this
+
+  emit<K>(event: K, payload: EventPayload<TEvents, K>, options?: EventOptions): this
+  call<K>(event: K, data: EventPayload<TEvents, K>): EventReturn<TEvents, K>
+  call<K>(event: K, data: EventPayload<TEvents, K>, strategy: 'all'): EventReturn<TEvents, K>[]
+
+  on<K>(event: K, listener: Listener<...>, options?: EventOptions): this
+  on<K>(event: K, listener: null, options: EventOptions & { watch: true }): Promise<...>
+  once<K>(event: K, listener: Listener<...>): this
+  off<K>(event: K, listener?: Listener<...>): this
+}
+```
+
+See [Working with the context](/getting-started/working-with-the-context) for the
+full HTTP surface built on top of this.
+
+## `Container`
+
+The DI container. One per application.
+
+```ts
+class Container {
+  constructor(logger?: Logger)
+  get moduleContainer(): ModulesContainer
+
+  register<T>(module: Constructor<T> | ImportableModule<T>, parentToken?: string): Promise<ModuleRef<T>>
+  resolve<T>(token: InjectionToken<T>): T
+  has(token: InjectionToken): boolean
+}
+```
+
+### `ModuleRef`
+
+A node in the module graph. Deliberately not named `Module`, so it never collides
+with the `@Module()` decorator.
+
+```ts
+class ModuleRef<T = any> {
+  constructor(readonly token: string, readonly metatype: Constructor<T>)
+  readonly imports: Set<ModuleRef>
+  readonly controllers: Map<InjectionToken, InstanceWrapper>
+  readonly channels: Map<InjectionToken, InstanceWrapper>
+
+  get instance(): T | undefined
+  setInstance(instance: T): void
+  addImports(imports: ModuleRef[]): void
+  addController(controller: Constructor, instance?: any): void
+  addChannel(channel: Constructor, instance?: any): void
+}
+```
+
+### `ModulesContainer` and `InstanceWrapper`
+
+```ts
+class ModulesContainer extends Map<string, ModuleRef> {
+  getByToken(token: string): ModuleRef | undefined   // O(1)
+  traverse(root?: ModuleRef): ModuleRef[]           // depth-first, each module once
+}
+
+class InstanceWrapper<T = any> {
+  constructor(readonly token: Function | string | symbol, instance?: T)
+  get id(): string
+  get isResolved(): boolean
+  getInstance(): T
+  tryGetInstance(): T | undefined
+}
+```
+
+## Discovery
+
+```ts
+import { Explorer, DiscoveryService } from '@glandjs/core'
+
+const explorer = new Explorer(container.moduleContainer)
+explorer.exploreControllers()   // RouteMetadata[]
+explorer.exploreChannels()      // ChannelMetadata[]
+
+const discovery = new DiscoveryService(container.moduleContainer)
+discovery.getControllers(PATH_METADATA)
+discovery.getChannels(METHOD_METADATA, 'product:list')
+```
+
+```ts
+interface RouteMetadata<T = any> {
+  method: string
+  route: string
+  controller: { path: string; instance: T; methodName: string; target: Function }
+}
+
+interface ChannelMetadata<T = any> {
+  instance: T
+  token: Constructor<T>
+  event: string
+  namespace: string
+  target: Function
+}
+```
+
+## Lifecycle
+
+```ts
+import { LifecycleScanner, type LifecycleHook } from '@glandjs/core'
+
+type LifecycleHook =
+  | 'onModuleInit' | 'onModuleDestroy'
+  | 'onAppBootstrap' | 'onAppShutdown' | 'onChannelInit'
+
+class LifecycleScanner {
+  constructor(modulesContainer: ModulesContainer, logger?: Logger)
+  scanForHooks(): void
+  runHook(hook: LifecycleHook, signal?: string): Promise<void>
+  onModuleInit(): Promise<void>
+  onModuleDestroy(): Promise<void>
+  onAppBootstrap(): Promise<void>
+  onAppShutdown(signal?: string): Promise<void>
+  onChannelInit(): Promise<void>
+}
+```
+
+The five hook interfaces live in `@glandjs/core/hooks`.
+
+## Errors
+
+| Class | Raised when |
+| --- | --- |
+| `CircularDependencyError` | The graph contains a cycle with no `forwardRef`. Carries `cycle: readonly string[]`. |
+| `UnresolvableDependencyError` | A constructor parameter cannot be resolved. Carries `owner` and `parameterIndex`. |
+| `UnknownEventError` | A context was asked for an event no channel registered. Carries `event` and `available`. |
+| `MissingDependencyError` | A lazily-loaded optional package is absent. Exported from `@glandjs/common`. |
+
+## Constants
+
+```ts
+export const CHANNEL_STATE_KEY = 'channel'
+export const BROKER_ID_STATE_KEY = 'brokerId'
+```
+
+State keys the binder uses to attach the channel registry to each context. They are
+internal; treat them as read-only.

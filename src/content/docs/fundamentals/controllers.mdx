@@ -1,0 +1,182 @@
+---
+title: Controllers
+description: Controllers translate a transport interaction into domain events. They declare routes and hold no side effects.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+A **controller** is a class whose methods are bound to routes. Each method receives
+the [context](/getting-started/working-with-the-context), declares what should
+happen, and replies. It does not perform side effects itself.
+
+## Defining a controller
+
+Route decorators come from `@glandjs/http`; the class decorator comes from
+`@glandjs/common`.
+
+```ts
+import { Controller } from '@glandjs/common'
+import { Get, Post, Put, Delete, Patch } from '@glandjs/http'
+import type { ExpressContext } from '@glandjs/express'
+
+@Controller('products')
+export class ProductController {
+  @Get()          list(ctx: ExpressContext) {}
+  @Get(':id')     getOne(ctx: ExpressContext) {}
+  @Post()         create(ctx: ExpressContext) {}
+  @Put(':id')     replace(ctx: ExpressContext) {}
+  @Patch(':id')   update(ctx: ExpressContext) {}
+  @Delete(':id')  remove(ctx: ExpressContext) {}
+}
+```
+
+`@Controller(path)` sets the prefix for every route in the class. The default is
+`'/'`.
+
+## Path composition
+
+The full route is `combineRoutePath(controllerPrefix, handlerPath)`, normalised to
+always start with `/` and never end with a trailing slash.
+
+| `@Controller` | `@Get` | Route |
+| --- | --- | --- |
+| `'products'` | `()` | `GET /products` |
+| `'products'` | `(':id')` | `GET /products/:id` |
+| `'products'` | `('search')` | `GET /products/search` |
+| `()` | `()` | `GET /` |
+| `('api/v1')` | `('/health')` | `GET /api/v1/health` |
+
+<Aside type="tip" title="Order matters for static segments">
+  Declare static segments such as `search` before parameterised ones such as `:id`.
+  A router matches in registration order, and `/products/search` registered after
+  `/products/:id` will be swallowed by it.
+</Aside>
+
+<Aside type="caution" title="Pass a single string">
+  The route decorators accept `string | string[]`, but the path is concatenated as a
+  string downstream. Passing an array produces a broken route — use one string, and
+  list multiple paths with separate handlers if you need them.
+</Aside>
+
+## Route decorators
+
+| Decorator | Method |
+| --- | --- |
+| `@Get(path?)` | `GET` |
+| `@Post(path?)` | `POST` |
+| `@Put(path?)` | `PUT` |
+| `@Patch(path?)` | `PATCH` |
+| `@Delete(path?)` | `DELETE` |
+| `@Options(path?)` | `OPTIONS` |
+| `@Head(path?)` | `HEAD` |
+| `@Search(path?)` | `SEARCH` |
+| `@All(path?)` | `ALL` |
+| `@RequestMapping({ path, method })` | any `RequestMethod` |
+
+```ts
+// Explicit form, using the raw enum
+import { RequestMapping, RequestMethod } from '@glandjs/http'
+
+class WebhookController {
+  @RequestMapping({ path: 'hooks/stripe', method: RequestMethod.POST })
+  stripe(ctx: ExpressContext) {
+    return ctx.send({ received: true })
+  }
+}
+```
+
+`RequestMethod` also carries the WebDAV verbs the `HttpCore` surface can register:
+`PROPFIND`, `PROPPATCH`, `MKCOL`, `COPY`, `MOVE`, `LOCK` and `UNLOCK`.
+
+## Emitting versus calling
+
+A controller has exactly two ways to reach a channel, and picking the right one is
+the main decision you make here.
+
+```ts
+@Get()
+async list(ctx: ExpressContext<EventTypes>) {
+  // Need the result to build the reply? -> call
+  const products = await ctx.call('db:product:all', {})
+  return ctx.send({ products })
+}
+
+@Get(':id')
+async getOne(ctx: ExpressContext<EventTypes>) {
+  // Only want it to happen? -> emit
+  ctx.emit('product:viewed', { id: ctx.params.id })
+  return ctx.send(ctx.params)
+}
+```
+
+| | `ctx.emit(event, payload)` | `ctx.call(event, payload)` |
+| --- | --- | --- |
+| Returns | the context | the handler's return value |
+| Observable | no | yes |
+| Typed payload | yes | yes |
+| Typed result | — | yes, via `IOEvent` |
+| Awaits async handlers | no | yes |
+
+## Discovery rules
+
+Controllers are found by reading decorator metadata only. Concretely, that means:
+
+- The class must be listed in a module's `controllers` array.
+- The method must be an **own** property of the prototype. Inherited handlers are not
+  discovered, so put shared behaviour in a helper, not a base class.
+- Getters and setters are skipped.
+- The order of registration follows module order, then declaration order — which is
+  why route order is deterministic.
+
+<Aside type="note">
+  There is no naming convention. A method called `list` with no decorator is not a
+  route, and a method called `anything` with `@Get()` is.
+</Aside>
+
+## Replying
+
+A handler can return the context, return a plain value, or do nothing and let a
+channel write the response.
+
+```ts
+// Explicit — always type-checked
+return ctx.send({ products }, 200)
+
+// Implicit — the adapter replies with the returned value
+return products
+```
+
+For the "channel writes the response" pattern — useful when the same channel serves
+several routes — emit the context itself and let the channel decide:
+
+```ts
+@Channel('response')
+export class ResponseChannel {
+  @On('send')
+  send(ctx: ExpressContext) {
+    return ctx.send('Hello World')
+  }
+}
+```
+
+## Error handling
+
+```ts
+import { HttpStatus } from '@medishn/toolkit'
+
+@Get(':id')
+async getOne(ctx: ExpressContext<EventTypes>) {
+  const product = await ctx.call('db:product:find', { id: ctx.params.id })
+
+  if (!product) {
+    return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Product not found' })
+  }
+
+  return ctx.send({ product })
+}
+```
+
+Adapter failures — a socket error, a crashed handler — are emitted as a
+`server:crashed` event on the HTTP broker rather than thrown at your route, so they
+can be logged centrally.

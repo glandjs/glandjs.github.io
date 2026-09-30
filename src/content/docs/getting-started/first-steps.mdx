@@ -1,0 +1,274 @@
+---
+title: First steps
+description: Build a working product API with Gland — modules, a controller, two channels, request/response events and lifecycle hooks.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+
+In this guide you will build a small but complete product API. By the end you will
+have used every core concept in the framework: a module, a controller, channels, a
+typed event map, dependency injection and lifecycle hooks.
+
+<Aside type="note" title="Prerequisites">
+  Complete [Installation](/getting-started/installation) first.
+</Aside>
+
+## The finished application
+
+```text title="Project structure"
+src/
+├── main.ts                    bootstrap + broker attachment
+├── app.module.ts              root module
+├── shared/
+│   └── events.interface.ts    the typed event map
+├── common/
+│   └── db.channel.ts          persistence side effects
+└── modules/
+    └── product/
+        ├── product.module.ts
+        ├── product.controller.ts
+        └── product.channel.ts
+```
+
+## 1. Declare the event map
+
+Every event name and payload shape in the application lives in one file. This is the
+contract that the compiler checks for you.
+
+```ts title="src/shared/events.interface.ts"
+import { IOEvent } from '@glandjs/events'
+
+export interface Product {
+  id: string
+  name: string
+  price: number
+  stock: number
+}
+
+export type NewProduct = Omit<Product, 'id'>
+
+export interface EventTypes {
+  /** Fire-and-forget. The channel returns nothing. */
+  'product:viewed': { id: string }
+
+  /** Request/response. `ctx.call()` resolves to `Promise<Product[]>`. */
+  'product:list': IOEvent<Record<string, never>, Promise<Product[]>>
+  'product:create': IOEvent<NewProduct, Promise<Product>>
+}
+```
+
+<Aside type="tip" title="Why IOEvent?">
+  A plain type is treated as the payload with a `void` return. Wrapping it in
+  `IOEvent<Payload, Return>` tells the type system that the channel handler returns
+  something, which is what makes `await ctx.call(...)` resolve to a real type
+  instead of `void`.
+</Aside>
+
+## 2. Write the channels
+
+Channels own every side effect. The database channel below is an in-memory store so
+the example runs with no database.
+
+```ts title="src/common/db.channel.ts"
+import { Channel, On } from '@glandjs/common'
+import type { Product, NewProduct } from '../shared/events.interface'
+
+@Channel('db')
+export class Database {
+  private products = new Map<string, Product>()
+
+  @On('product:create')
+  createProduct(input: NewProduct): Product {
+    const id = Math.random().toString(36).slice(2, 9)
+    const product: Product = { id, ...input }
+    this.products.set(id, product)
+    return product
+  }
+
+  @On('product:all')
+  async allProducts(): Promise<Product[]> {
+    return Array.from(this.products.values())
+  }
+}
+```
+
+Note the addressing. `@Channel('db')` prefixes every `@On()` in the class, so
+`@On('product:create')` is addressed as **`db:product:create`** from the outside.
+You never write the namespace twice.
+
+<Aside type="caution" title="Channel names are global">
+  Two channels cannot both answer `db:product:create`. A duplicate fails at startup
+  with a `Duplicate channel event` error naming both classes, instead of silently
+  picking one.
+</Aside>
+
+The second channel reacts to a domain event rather than serving a request — this is
+the fan-out that makes the architecture worth it.
+
+```ts title="src/modules/product/product.channel.ts"
+import { Channel, On } from '@glandjs/common'
+
+@Channel('product')
+export class ProductChannel {
+  @On('viewed')
+  onViewed(payload: { id: string }) {
+    console.log(`[audit] product ${payload.id} was viewed`)
+  }
+}
+```
+
+## 3. Write the controller
+
+A controller receives the context, delegates and replies. It performs no side effects.
+
+```ts title="src/modules/product/product.controller.ts" ins={4,7,13,20}
+import { Controller } from '@glandjs/common'
+import { Get, Post } from '@glandjs/http'
+import type { ExpressContext } from '@glandjs/express'
+import type { EventTypes } from '../../shared/events.interface'
+
+@Controller('products')
+export class ProductController {
+  @Get()
+  async list(ctx: ExpressContext<EventTypes>) {
+    const products = await ctx.call('db:product:all', {})
+    return ctx.send({ products })
+  }
+
+  @Get(':id')
+  async getOne(ctx: ExpressContext<EventTypes>) {
+    const { id } = ctx.params ?? {}
+    // Fire-and-forget: the audit channel reacts, this request does not wait.
+    ctx.emit('product:viewed', { id: id ?? '' })
+    return ctx.send({ params: ctx.params })
+  }
+
+  @Post()
+  async create(ctx: ExpressContext<EventTypes>) {
+    const { name, price, stock } = ctx.body ?? {}
+
+    if (!name || price == null) {
+      return ctx.send({ error: '`name` and `price` are required' }, 400)
+    }
+
+    const product = await ctx.call('db:product:create', { name, price, stock: stock ?? 0 })
+    return ctx.send({ product }, 201)
+  }
+}
+```
+
+The two verbs, side by side:
+
+| | `ctx.emit(...)` | `ctx.call(...)` |
+| --- | --- | --- |
+| Returns | `this` (chainable) | the handler's return value |
+| Awaits the handler | no | yes, if the return is a promise |
+| Typed result | — | yes, via `IOEvent` |
+| Use for | logging, metrics, cache warming, fan-out | anything whose result the reply needs |
+
+## 4. Compose the modules
+
+```ts title="src/modules/product/product.module.ts"
+import { Module } from '@glandjs/common'
+import { ProductController } from './product.controller'
+import { ProductChannel } from './product.channel'
+
+@Module({
+  controllers: [ProductController],
+  channels: [ProductChannel],
+})
+export class ProductModule {}
+```
+
+```ts title="src/app.module.ts" ins={3,6,9,12,15}
+import { Module } from '@glandjs/common'
+import { ProductModule } from './modules/product/product.module'
+import { Database } from './common/db.channel'
+import type { OnAppBootstrap, OnAppShutdown, OnModuleDestroy, OnModuleInit } from '@glandjs/core'
+
+@Module({
+  imports: [ProductModule],
+  channels: [Database],
+})
+export class AppModule
+  implements OnModuleInit, OnModuleDestroy, OnAppBootstrap, OnAppShutdown
+{
+  onModuleInit() {
+    console.log('[AppModule] module initialized')
+  }
+
+  onAppBootstrap() {
+    console.log('[AppModule] application bootstrapped')
+  }
+
+  onAppShutdown(signal?: string) {
+    console.log(`[AppModule] shutting down: ${signal}`)
+  }
+
+  onModuleDestroy() {
+    console.log('[AppModule] module destroyed')
+  }
+}
+```
+
+<Aside type="note" title="Modules compose">
+  `ProductModule` does not import `Database`, and it does not need to. Both are
+  registered in the same application, and a controller can reach any channel in the
+  registry. Modules group code; they do not scope visibility. See
+  [Modules](/fundamentals/modules).
+</Aside>
+
+## 5. Bootstrap
+
+```ts title="src/main.ts"
+import 'reflect-metadata'
+import { GlandFactory } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express'
+import { AppModule } from './app.module'
+import type { EventTypes } from './shared/events.interface'
+
+async function bootstrap() {
+  const app = await GlandFactory.create(AppModule)
+
+  const server = app.connectTo(ExpressBroker<EventTypes>)
+  server.json()
+  server.urlencoded({ extended: true })
+  server.listen(3000, { host: '0.0.0.0', message: 'API ready on :3000' })
+}
+
+void bootstrap()
+```
+
+`connectTo(ExpressBroker<EventTypes>)` returns the live Express application. Passing
+the event map as a type argument is what makes `ctx.call('db:product:all', {})` return
+`Promise<Product[]>` inside your controllers.
+
+## 6. Run it
+
+```bash
+pnpm tsx src/main.ts
+```
+
+```bash title="Exercise the API"
+curl -X POST localhost:3000/products \
+  -H 'content-type: application/json' \
+  -d '{"name":"Keyboard","price":89,"stock":12}'
+
+# {"product":{"id":"k3f9a2b","name":"Keyboard","price":89,"stock":12}}
+
+curl localhost:3000/products
+# {"products":[{"id":"k3f9a2b","name":"Keyboard","price":89,"stock":12}]}
+
+curl localhost:3000/products/k3f9a2b
+# {"params":{"id":"k3f9a2b"}}   …and the server logs: [audit] product k3f9a2b was viewed
+```
+
+## What to read next
+
+- [Working with the context](/getting-started/working-with-the-context) — the full
+  `ctx` surface: request data, responses, state and errors.
+- [Controllers](/fundamentals/controllers) — routing, path parameters, and how
+  replies are resolved.
+- [Channels](/fundamentals/channels) — namespaces, return values and the registry.
+- [Lifecycle events](/fundamentals/lifecycle-events) — the five hooks and their order.

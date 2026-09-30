@@ -1,0 +1,71 @@
+---
+/**
+ * The feature grid on the landing page.
+ *
+ * Starlight's splash template no longer renders a `features` frontmatter key, so
+ * the grid is authored here and dropped into the page body.
+ */
+import { Icon } from '@astrojs/starlight/components'
+import type { StarlightIcon } from '@astrojs/starlight/types'
+
+const features: { icon: StarlightIcon; title: string; body: string }[] = [
+  {
+    icon: 'signal',
+    title: 'Event-driven by default',
+    body: 'Controllers never call business logic. They emit domain events; channels decide what happens next. Side effects become observable and replaceable.',
+  },
+  {
+    icon: 'rocket',
+    title: 'Protocol-agnostic',
+    body: 'Transport lives in brokers. Run the same controllers and channels over HTTP today and over WebSocket or RPC tomorrow — only the adapter wiring changes.',
+  },
+  {
+    icon: 'seti:config',
+    title: 'Tiny primitives',
+    body: 'The emitter is three methods and a couple of kilobytes. The broker adds channels, mesh networking and async watchers on top of it. Nothing is hidden.',
+  },
+  {
+    icon: 'seti:typescript',
+    title: 'TypeScript-first',
+    body: 'Event names and payload shapes live in one typed map. A renamed event or a changed payload is a compile error, not a production incident.',
+  },
+  {
+    icon: 'approve-check',
+    title: 'Testable by construction',
+    body: 'Assert the events a controller emitted. Call a channel handler with a fake context. Because side effects live in channels, your suites stay small.',
+  },
+  {
+    icon: 'code-branch',
+    title: 'Gradually adoptable',
+    body: 'Install only the packages you need and mount Gland channels next to your existing HTTP layer. There is no big-bang migration.',
+  },
+]
+---
+
+<div class="features">
+  {
+    features.map((feature) => (
+      <div class="feature">
+        <span class="feature__icon">
+          <Icon name={feature.icon} class="size-5" />
+        </span>
+        <span class="title">{feature.title}</span>
+        <p>{feature.body}</p>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .feature__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin-bottom: 0.15rem;
+    border-radius: var(--__gland-radius-sm);
+    background-color: var(--sl-color-accent-low);
+    color: var(--sl-color-text-accent);
+  }
+</style>
