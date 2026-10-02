@@ -100,28 +100,48 @@ return ctx.send({ product }, 201)
 return ctx.send({ error: 'Invalid payload' }, 422)
 ```
 
+### Headers
+
+Reading and writing are deliberately separate pairs, so it is always obvious which side
+you are touching:
+
+```ts
+// response
+ctx.setHeader('x-request-id', id)
+ctx.setHeaders({ 'x-a': '1', 'x-b': '2' })
+ctx.removeHeader('x-request-id')
+
+// request
+const value = ctx.getHeader('x-request-id')
+const has = ctx.hasHeader('x-request-id')
+
+// response, read back
+ctx.vary('Origin')
+ctx.getResponseHeader('content-type')
+```
+
+<Aside type="caution" title="getHeader reads the request">
+  As of the 1.1 pipeline rewrite, `ctx.getHeader(name)` returns the header the **client
+  sent**. Reading a response header is `ctx.getResponseHeader(name)`. Anything that
+  asked `getHeader()` for `content-type` or a CORS request header before that release was
+  asking the wrong side.
+</Aside>
+
 ### Cookies
+
+`maxAge` is **milliseconds**. `@fastify/cookie` uses seconds; the adapter converts, so
+the value you write is the value you mean.
 
 ```ts
 ctx.setCookie('session', token, {
   httpOnly: true,
   secure: true,
   sameSite: 'lax',
-  maxAge: 60 * 60 * 1000,
+  maxAge: 60 * 60 * 1000, // one hour
 })
 
 const token = ctx.getCookie('session')
 ctx.clearCookie('session')
-```
-
-### Headers
-
-```ts
-ctx.setHeader('x-request-id', id)
-ctx.setHeaders({ 'x-a': '1', 'x-b': '2' })
-ctx.removeHeader('x-request-id')
-const value = ctx.getHeader('x-request-id')
-const has = ctx.hasHeader('x-request-id')
 ```
 
 ## Sharing state
@@ -207,28 +227,26 @@ const route = await ctx.on('gland:define:route', null, { watch: true, timeout: 1
 
 ## Errors
 
-`ctx.error` is populated by the adapter when a handler throws, and `throw()` creates a
-status-aware exception.
+`ctx.error` is populated by the adapter when a handler throws, and `ctx.throw()` writes
+an RFC 7807 problem document and marks the context written, so `return ctx.throw(...)`
+is a valid reply.
 
-```ts
-import { HttpStatus } from '@glandjs/http'
-
-if (!product) {
-  return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Product not found' })
-}
-```
-
-Adapter-level failures are surfaced through the broker's `server:crashed` event, so
-you can log them centrally rather than wrapping every route.
-
-`ctx.throw()` takes an `HttpStatus`, which is re-exported by `@medishn/toolkit`
-rather than by Gland. If you prefer to avoid that extra import, pass the numeric
-status code — the exception carries it either way.
+`HttpStatus` comes from `@medishn/toolkit`, not from `@glandjs/http`. If you prefer to
+avoid that extra import, pass the numeric status code — the exception carries it either
+way.
 
 ```ts
 import { HttpStatus } from '@medishn/toolkit'
 
 if (!product) {
-  return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Product not found' })
+  return ctx.throw(HttpStatus.NOT_FOUND, { detail: 'Product not found' })
 }
 ```
+
+The options are `{ type, title, detail, instance }`. `detail` is what reaches the
+client; for anything that is **not** an `HttpException` the default renderer replaces
+the whole body with a bare `500`, so a `throw` inside a channel cannot leak a stack
+trace to a caller.
+
+Adapter-level failures are surfaced through the broker's `http:server:crashed` event, so
+you can log them centrally rather than wrapping every route.
