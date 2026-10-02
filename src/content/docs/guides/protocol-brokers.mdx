@@ -97,7 +97,7 @@ import { GlandFactory } from '@glandjs/core'
 import { RpcBroker } from './rpc/broker'
 import { AppModule } from './app.module'
 
-const app = await GlandFactory.create(AppModule)
+const { app } = await GlandFactory.create(AppModule)
 const server = app.connectTo(RpcBroker, { port: 4000 })
 server.listen()
 ```

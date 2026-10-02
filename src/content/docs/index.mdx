@@ -80,6 +80,40 @@ import PackageGrid from '@components/PackageGrid.astro'
   <PackageGrid />
 </section>
 
+<section class="home-section home-section--packages">
+  <div class="home-section__heading home-section__heading--row">
+    <div>
+      <span class="home-section__eyebrow">From the repositories</span>
+      <h2>The long documentation is generated</h2>
+      <p>Every API reference, the HTTP guides, the adapter matrix and the changelogs are published from the Gland repositories themselves, on every build. A guide is written where the code is, and the site republishes it.</p>
+    </div>
+    <a class="home-section__link" href="/reference">See how <span>→</span></a>
+  </div>
+
+  <div class="home-path">
+    <a href="/reference/http/guides/getting-started" class="home-path__item">
+      <span class="home-path__number">01</span>
+      <span><strong>HTTP layer</strong><small>One core, five transports, and the differences between them.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+    <a href="/reference/events/api" class="home-path__item">
+      <span class="home-path__number">02</span>
+      <span><strong>Event broker</strong><small>Channels, mesh networking, watchers and every option.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+    <a href="/reference/emitter/api" class="home-path__item">
+      <span class="home-path__number">03</span>
+      <span><strong>Emitter</strong><small>Three methods, wildcards, and the listener cache.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+    <a href="/changelog/http" class="home-path__item">
+      <span class="home-path__number">04</span>
+      <span><strong>Changelogs</strong><small>Release history and the changesets that have not shipped yet.</small></span>
+      <span class="home-path__arrow">→</span>
+    </a>
+  </div>
+</section>
+
 <section class="home-section home-section--path">
   <div class="home-section__heading">
     <span class="home-section__eyebrow">The path</span>

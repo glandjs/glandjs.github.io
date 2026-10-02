@@ -22,7 +22,7 @@ rules:
   # ── Documentation ──────────────────────────────────────────────
   adr: false
   contributing: error
-  api_docs: false # API reference lives in src/content/docs/packages
+  api_docs: false # generated from the repositories — see scripts/docs-sync
   security: info
   code_of_conduct: info
   pull_request_template: error

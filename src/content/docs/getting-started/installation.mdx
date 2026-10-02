@@ -10,7 +10,7 @@ import { Aside, Steps, TabItem, Tabs } from '@astrojs/starlight/components'
 
 | | |
 | --- | --- |
-| Node.js | `>= 20.9.0` |
+| Node.js | `>= 20` |
 | TypeScript | `>= 5.0` |
 | Package manager | pnpm (recommended), npm or Yarn |
 
@@ -30,30 +30,33 @@ plus `emitDecoratorMetadata` from TypeScript. Both are set up for you below.
 
 2. **Install the runtime packages.**
 
-   For an HTTP application with the Express adapter:
+   For an HTTP application. Swap `@glandjs/express` for whichever transport you want —
+   `@glandjs/fastify`, `@glandjs/koa`, `@glandjs/hono` or `@glandjs/node`. Only one of
+   them is ever needed:
 
    <Tabs syncKey="pkg">
      <TabItem label="pnpm">
        ```bash
-       pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express
+       pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/node reflect-metadata
        ```
      </TabItem>
      <TabItem label="npm">
        ```bash
-       npm install @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express
+       npm install @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/node reflect-metadata
        ```
      </TabItem>
      <TabItem label="yarn">
        ```bash
-       yarn add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express
+       yarn add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/node reflect-metadata
        ```
      </TabItem>
    </Tabs>
 
    <Aside type="tip" title="Only install what you use">
      `@glandjs/core`, `@glandjs/common` and `@glandjs/events` are the framework.
-     `@glandjs/http` and `@glandjs/express` are only needed if you serve HTTP.
-     Drop them and you have a transport-agnostic event application.
+     `@glandjs/http` and one adapter are only needed if you serve HTTP. Drop them and you
+     have a transport-agnostic event application. `@glandjs/node` is the cheapest way in:
+     it pulls in no HTTP server at all, because `node:http` is already in the runtime.
    </Aside>
 
 3. **Install the toolchain and `reflect-metadata`.**
@@ -128,18 +131,41 @@ plus `emitDecoratorMetadata` from TypeScript. Both are set up for you below.
 | [`@glandjs/core`](/packages/core) | DI container, module bootstrap, lifecycle hooks, `Context` | always |
 | [`@glandjs/common`](/packages/common) | `@Module`, `@Controller`, `@Channel`, `@On`, `@Inject` | always |
 | [`@glandjs/events`](/packages/events) | `EventBroker`, channels, mesh networking, `IOEvent` | always |
-| [`@glandjs/http`](/packages/http) | Route decorators, `HttpContext`, `HttpCore`, `HttpBroker` | you serve HTTP |
-| [`@glandjs/express`](/packages/express) | The Express 5 adapter | you use Express |
 | [`@glandjs/emitter`](/packages/emitter) | Standalone zero-dependency event emitter | you want a pub/sub primitive without the framework |
+| [`@glandjs/http`](/packages/http) | Route decorators, `HttpContext`, the middleware onion, `HttpCore`, `HttpBroker` | you serve HTTP |
+| [`@glandjs/express`](/packages/express) | The Express 5 adapter | you use Express |
+| [`@glandjs/fastify`](/packages/fastify) | The Fastify 5 adapter | you use Fastify |
+| [`@glandjs/koa`](/packages/koa) | The Koa 3 adapter | you use Koa |
+| [`@glandjs/hono`](/packages/hono) | The Hono 4 adapter, on Node and the edge | you want Fetch or an edge runtime |
+| [`@glandjs/node`](/packages/node) | The `node:http` adapter, zero dependencies | you want no framework at all |
+
+Pick **one** adapter. They are interchangeable: the same controller runs unchanged on
+any of them, and only the `connectTo()` line differs. The
+[adapter matrix](/reference/http/adapter-matrix) is the honest comparison.
+
+<Aside type="tip" title="Reflect metadata is not optional">
+  `reflect-metadata` is a **required** peer dependency of `@glandjs/http` and every
+  adapter, and `experimentalDecorators` / `emitDecoratorMetadata` must be on in
+  `tsconfig.json`. The decorators are the only way the framework discovers your
+  application — there is no naming convention and no config file.
+</Aside>
 
 ## Optional extras
 
-Some adapter features load their dependency lazily and will tell you if it is
-missing.
+`@glandjs/http` has no runtime dependencies beyond the toolkit. A few adapter features
+are peer dependencies marked optional, and each one throws a message naming the package
+rather than failing with `undefined is not a function`.
 
-```bash
-pnpm add cors          # required by app.enableCors()
-```
+| Adapter | Install for | Package |
+| --- | --- | --- |
+| `@glandjs/express` | multipart | `multer` |
+| `@glandjs/fastify` | cookies, forms, static, multipart | `@fastify/cookie`, `@fastify/formbody`, `@fastify/static`, `@fastify/multipart` |
+| `@glandjs/koa` | body parsing, static, multipart | `koa-bodyparser`, `koa-static`, `@koa/multer` |
+| `@glandjs/hono` | listening on Node | `@hono/node-server` |
+| `@glandjs/node` | nothing | — |
+
+CORS, cookies, problem details and SSE are implemented **inside** `@glandjs/http` and
+need nothing installed.
 
 ## Next
 

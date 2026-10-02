@@ -259,7 +259,7 @@ shares by reference.
 ```ts
 class MissingDependencyError extends Error {
   constructor(readonly packageName: string, reason: string)
-  // message: The "cors" package is missing. Install it to take advantage of CORS support.
+  // message: The "@fastify/cookie" package is missing. Install it to read and write cookies.
 }
 
 function loadPackage<T = unknown>(packageName: string, reason: string, loaderFn?: () => T): T

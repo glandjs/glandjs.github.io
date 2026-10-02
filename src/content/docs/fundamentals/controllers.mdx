@@ -170,13 +170,13 @@ async getOne(ctx: ExpressContext<EventTypes>) {
   const product = await ctx.call('db:product:find', { id: ctx.params.id })
 
   if (!product) {
-    return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Product not found' })
+    return ctx.throw(HttpStatus.NOT_FOUND, { detail: 'Product not found' })
   }
 
   return ctx.send({ product })
 }
 ```
 
-Adapter failures — a socket error, a crashed handler — are emitted as a
-`server:crashed` event on the HTTP broker rather than thrown at your route, so they
-can be logged centrally.
+Adapter failures — a socket error, a startup crash — are emitted as a
+`http:server:crashed` event on the HTTP broker rather than thrown at your route, so
+they can be logged centrally.

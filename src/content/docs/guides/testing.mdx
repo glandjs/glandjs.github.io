@@ -166,28 +166,30 @@ describe('module wiring', () => {
 For full coverage, boot the real application and drive it over HTTP.
 
 ```ts title="test/api.e2e-spec.ts"
-import { beforeAll, afterAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { GlandFactory } from '@glandjs/core'
 import { ExpressBroker } from '@glandjs/express'
 import { AppModule } from '../src/app.module'
 
-let server: any
+let http: any
+let base: string
 
 beforeAll(async () => {
-  const app = await GlandFactory.create(AppModule)
-  server = app.connectTo(ExpressBroker)
-  server.json()
-  await new Promise<void>((resolve) => server.listen(0, resolve))
+  const { app } = await GlandFactory.create(AppModule)
+  http = app.connectTo(ExpressBroker)
+
+  // Port 0 asks the OS for a free port, so suites never collide.
+  http.listen(0)
+  await http.ready()
+  base = `http://127.0.0.1:${http.port}`
 })
 
 afterAll(async () => {
-  await server.close()
+  await http.close()
 })
 
 describe('POST /products', () => {
   it('creates and reads back a product', async () => {
-    const base = `http://localhost:${server.address().port}`
-
     const created = await fetch(`${base}/products`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -205,8 +207,9 @@ describe('POST /products', () => {
 ```
 
 <Aside type="caution" title="Port 0, not 3000">
-  Ask the OS for a free port with `listen(0)` and read it back from
-  `server.address().port`. A hard-coded port makes parallel test runs flaky.
+  Ask the OS for a free port with `listen(0)` and read it back from `http.port`, which
+  reports the **resolved** port rather than the requested one. A hard-coded port makes
+  parallel test runs flaky.
 </Aside>
 
 ## Waiting for events

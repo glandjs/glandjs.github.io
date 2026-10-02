@@ -10,10 +10,12 @@ import { Aside } from '@astrojs/starlight/components'
 
 ### Is Gland production-ready?
 
-The core, the events package and the emitter are stable and used in production. The
-HTTP layer — `@glandjs/http` and `@glandjs/express` — is still at
-`1.0.0-beta`, and a few features are incomplete. Check the
-[Express caveats](/packages/express#notes-and-caveats) before depending on it.
+The core, the events package and the emitter are stable. The HTTP layer —
+`@glandjs/http` and the five adapters — is published under the `beta` tag at
+`1.1.0-beta`, because the request pipeline was reworked between 1.0 and 1.1 and the
+resulting changesets are still pending. Read the
+[adapter matrix](/reference/http/adapter-matrix) for what each transport can and cannot
+do, and pin an exact version rather than a range.
 
 If you need a proven HTTP stack today, run Gland channels beside Express and keep
 Express for routing. The two compose without either one knowing about the other.
@@ -38,12 +40,15 @@ Yes, and it is a supported migration path. Attach a broker, register your Gland
 channels, and leave your existing routes in place:
 
 ```ts
-const app = await GlandFactory.create(AppModule)
-const server = app.connectTo(ExpressBroker)
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker)
 
-server.use(existingMiddleware)
-app.get('/legacy', legacyHandler)   // the raw Express app
+http.useRaw(existingMiddleware)
+http.get('/legacy', legacyHandler)   // alongside your Gland routes
 ```
+
+The raw Express application is `http.instance`, so anything you can do with `app` you
+can still do here.
 
 ### Which Node.js versions are supported?
 

@@ -16,11 +16,10 @@ own: in a library, a CLI, a browser bundle or a test harness.
 pnpm add @glandjs/emitter
 ```
 
-<Aside type="note" title="Source of truth">
-  This page mirrors the package's own
-  [API reference](https://github.com/glandjs/emitter/blob/main/docs/API.md) on the
-  `main` branch. Release notes are on the
-  [changelog page](/changelog/emitter).
+<Aside type="note" title="The API reference is generated">
+  This page explains the rules. The exhaustive reference — every signature, every default,
+  every edge case — is [mirrored from the repository](/reference/emitter/api) on every
+  build, and the release notes are on the [changelog page](/changelog/emitter).
 </Aside>
 
 ## Table of contents
@@ -42,6 +41,8 @@ pnpm add @glandjs/emitter
 new EventEmitter<T>(splitter?: string, maxCacheSize?: number)
 ```
 
+Both arguments are positional.
+
 | Parameter | Type | Default | Description |
 | --- | --- | --- | --- |
 | `splitter` | `string` | `':'` | Character that separates the segments of an event name. |
@@ -50,7 +51,13 @@ new EventEmitter<T>(splitter?: string, maxCacheSize?: number)
 ```ts
 const emitter = new EventEmitter()          // 'a:b' namespaces, cache of 64
 const dashed = new EventEmitter('-', 128)   // 'a-b' namespaces, cache of 128
+const slashed = new EventEmitter('/')       // 'a/b' namespaces, default cache
 ```
+
+<Aside type="note" title="The parameter is spelled `spliter` in the source">
+  A historical typo in the constructor. Because the arguments are positional it makes no
+  difference at runtime — it only shows up in editor tooltips.
+</Aside>
 
 ## on
 
@@ -300,4 +307,5 @@ function once<T>(emitter: EventEmitter<T>, event: string, listener: (p: any) => 
 
 ## Changelog
 
-See the [emitter changelog](/changelog/emitter).
+See the [emitter changelog](/changelog/emitter), and the
+[generated API reference](/reference/emitter/api) for the exhaustive version of this page.

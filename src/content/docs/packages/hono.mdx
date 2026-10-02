@@ -1,0 +1,121 @@
+---
+title: '@glandjs/hono'
+badge: '@glandjs/hono@1.1.0-beta'
+description: The Hono 4 transport — one HTTP layer that also runs on Cloudflare Workers, Deno, Bun and anywhere else the Fetch API runs.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+`@glandjs/hono` binds your controllers and channels to a [Hono 4](https://hono.dev)
+application. It is the transport that also runs at the edge: the same module that
+`listen()`s on Node exports as a plain Fetch handler everywhere else.
+
+```bash
+pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/hono hono reflect-metadata
+```
+
+<Aside type="note" title="This page is a summary">
+  The full documentation is [mirrored from the repository](/reference/http/adapters/hono)
+  on every build.
+</Aside>
+
+## Attaching it
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { Controller, Module } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+import { HonoBroker, type HonoRequestContext } from '@glandjs/hono'
+
+@Controller('/products')
+export class ProductController {
+  @Get('/:id')
+  async find(ctx: HonoRequestContext) {
+    return { product: await ctx.call('db:product:find', { id: ctx.params.id }) }
+  }
+}
+
+@Module({ controllers: [ProductController] })
+export class AppModule {}
+
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(HonoBroker)
+
+http.listen(3000)
+await http.ready()
+```
+
+## Exports
+
+| Symbol | Description |
+| --- | --- |
+| `HonoBroker<TEvents>` | The broker you pass to `connectTo()`. |
+| `HonoRequestContext<TEvents>` | The context your handlers receive. |
+| `HonoCore<TEvents>` | The application object, plus `http.hono`. |
+| `HonoAdapter<TEvents>` | The transport implementation. |
+
+<Aside type="caution" title="The context is not called HonoContext">
+  The exported class is **`HonoRequestContext`**. Hono's own type is `Context`, and the
+  name was already taken by Gland's base class. This is the one naming exception across
+  the five adapters.
+</Aside>
+
+## The edge
+
+```ts
+// Cloudflare Workers, Deno Deploy, Bun, Lambda
+export default http.hono
+```
+
+`listen()` is Node-only. On any other runtime it logs that it is running on a non-Node
+runtime and returns without an error, so the same module serves both worlds.
+
+| Runtime | How it listens |
+| --- | --- |
+| Node | `@hono/node-server` is loaded on demand |
+| Cloudflare Workers / Deno / Bun | export `http.hono`; `listen()` is a no-op |
+
+## The Fetch consequences
+
+A Fetch `Response` is **immutable**. That single fact explains most of what follows.
+
+- **No `raw` body.** A fetch body is read as text. The adapter stores it in
+  `ctx.rawText` and parses `ctx.body` from the `Content-Type`. Declaring `raw()` logs a
+  warning at boot rather than failing later.
+- **`useRaw()` can add headers only.** A framework middleware may add headers, which the
+  adapter merges with the response taking precedence; it cannot amend the status or the
+  body, but it can short-circuit by returning its own `Response`.
+- **`ctx.ip` is `undefined` locally.** It is derived from `X-Forwarded-For` and
+  `X-Real-IP`, because a Fetch request has no socket.
+- **`signedCookies` is `{}`.**
+
+## Multipart
+
+Hono handles it through the platform, not through a parser:
+
+```ts
+@Get('/upload')
+async upload(ctx: HonoRequestContext) {
+  const form = await ctx.req.parseBody()
+  return { names: Object.keys(form) }
+}
+```
+
+Declaring `multipart()` logs a warning telling you to call `parseBody()` yourself.
+
+## What it cannot do
+
+- `raw` bodies — see above.
+- Multipart through `bodyParser()` — use `c.req.parseBody()`.
+- `https` / `trustProxy` configuration: the runtime owns the socket, so the adapter only
+  handles `poweredBy`.
+- Signed cookies.
+
+Everything else — the onion, extended verbs, CORS, cookies, SSE, `close()` — behaves
+exactly as the matrix says.
+
+## See also
+
+- [Mirrored adapter documentation](/reference/http/adapters/hono)
+- [Adapter matrix](/reference/http/adapter-matrix)
+- [`@glandjs/http`](/packages/http)

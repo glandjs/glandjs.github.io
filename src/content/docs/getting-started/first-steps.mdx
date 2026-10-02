@@ -229,20 +229,32 @@ import { AppModule } from './app.module'
 import type { EventTypes } from './shared/events.interface'
 
 async function bootstrap() {
-  const app = await GlandFactory.create(AppModule)
+  const { app, shutdown } = await GlandFactory.create(AppModule)
 
-  const server = app.connectTo(ExpressBroker<EventTypes>)
-  server.json()
-  server.urlencoded({ extended: true })
-  server.listen(3000, { host: '0.0.0.0', message: 'API ready on :3000' })
+  const http = app.connectTo(ExpressBroker, { prefix: '/api' })
+  http.bodyParser({ json: true, urlencoded: { extended: true } })
+  http.listen(3000, { host: '0.0.0.0' })
+  await http.ready()
+
+  process.once('SIGTERM', () => void shutdown('SIGTERM'))
+  process.once('SIGINT', () => void shutdown('SIGINT'))
 }
 
 void bootstrap()
 ```
 
-`connectTo(ExpressBroker<EventTypes>)` returns the live Express application. Passing
-the event map as a type argument is what makes `ctx.call('db:product:all', {})` return
-`Promise<Product[]>` inside your controllers.
+`GlandFactory.create()` resolves only once binding has finished, and it returns
+`{ app, shutdown }` — the core bus and the handle that runs the shutdown phases.
+`connectTo(ExpressBroker)` takes the broker **class**, not an instance, and returns the
+live application. Declaring the event map as a plain `type` is what makes
+`ctx.call('db:product:all', …)` return `Promise<Product[]>` inside your controllers.
+
+<Aside type="note" title="Await ready(), not listen()">
+  `listen()` is fluent and returns immediately; `await http.ready()` is the promise that
+  resolves once the socket is bound. It matters more than it looks: Fastify and Hono load
+  plugins asynchronously, so on those adapters `listen()` alone does not mean the server
+  is serving. See [Choosing an adapter](/reference/http/guides/adapters).
+</Aside>
 
 ## 6. Run it
 

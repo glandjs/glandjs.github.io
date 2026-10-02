@@ -35,6 +35,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Fails the deployment if a document that config.mjs declares has gone
+      # missing or become unreadable, instead of quietly publishing a site with
+      # a hole in it.
+      - name: Verify the documentation sources
+        run: pnpm docs:check
+        env:
+          # There are no sibling checkouts on a runner, so this is what the sync
+          # would pick anyway. Stated explicitly so a future default change
+          # cannot silently switch the deployment to a different source.
+          GLAND_DOCS_SOURCE: remote
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GLAND_DEBUG: ''
+
+      # `build` re-runs the sync itself; this step is here so the log shows what
+      # was published even if the build fails afterwards.
+      - name: Sync documentation from the repositories
+        run: pnpm docs:sync:remote
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build
         run: pnpm build
         env:

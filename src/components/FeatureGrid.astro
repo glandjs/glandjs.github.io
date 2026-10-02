@@ -16,8 +16,8 @@ const features: { icon: StarlightIcon; title: string; body: string }[] = [
   },
   {
     icon: 'rocket',
-    title: 'Protocol-agnostic',
-    body: 'Transport lives in brokers. Run the same controllers and channels over HTTP today and over WebSocket or RPC tomorrow — only the adapter wiring changes.',
+    title: 'One core, five transports',
+    body: 'The HTTP layer has no server in it. Express, Fastify, Koa, Hono and node:http each implement the same contract, so the same controller, middleware and assertions produce the same results on all five.',
   },
   {
     icon: 'seti:config',
@@ -36,8 +36,8 @@ const features: { icon: StarlightIcon; title: string; body: string }[] = [
   },
   {
     icon: 'code-branch',
-    title: 'Gradually adoptable',
-    body: 'Install only the packages you need and mount Gland channels next to your existing HTTP layer. There is no big-bang migration.',
+    title: 'Extensible seam',
+    body: 'Adding a transport means implementing one abstract adapter. And because a broker is just a class, WebSocket or RPC is the same exercise — there is no big-bang migration.',
   },
 ]
 ---

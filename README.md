@@ -17,14 +17,21 @@ modules then run over HTTP, WebSocket or RPC — only the adapter wiring changes
 
 ## Packages
 
+Versions are read from each repository's `package.json` when this table was last
+generated, not typed by hand.
+
 | Package | Version | Description |
 | --- | --- | --- |
 | [`@glandjs/core`](https://glandjs.github.io/packages/core/) | `1.0.3-beta` | DI container, module bootstrap, lifecycle hooks, `Context` |
 | [`@glandjs/common`](https://glandjs.github.io/packages/common/) | `1.0.3-beta` | `@Module`, `@Controller`, `@Channel`, `@On`, `@Inject` |
-| [`@glandjs/events`](https://glandjs.github.io/packages/events/) | `1.1.2` | Namespaced event broker, channels, mesh networking |
+| [`@glandjs/events`](https://glandjs.github.io/packages/events/) | `2.0.0` | Namespaced event broker, channels, mesh networking |
 | [`@glandjs/emitter`](https://glandjs.github.io/packages/emitter/) | `1.1.4` | Zero-dependency emitter — `on`, `off`, `emit` |
-| [`@glandjs/http`](https://glandjs.github.io/packages/http/) | `1.0.0-beta` | Route decorators, `HttpContext`, `HttpCore`, `HttpBroker` |
-| [`@glandjs/express`](https://glandjs.github.io/packages/express/) | `1.0.0-beta` | The Express 5 adapter |
+| [`@glandjs/http`](https://glandjs.github.io/packages/http/) | `1.1.0-beta` | The framework-agnostic HTTP core |
+| [`@glandjs/express`](https://glandjs.github.io/packages/express/) | `1.1.0-beta` | The Express 5 adapter |
+| [`@glandjs/fastify`](https://glandjs.github.io/packages/fastify/) | `1.1.0-beta` | The Fastify 5 adapter |
+| [`@glandjs/koa`](https://glandjs.github.io/packages/koa/) | `1.1.0-beta` | The Koa 3 adapter |
+| [`@glandjs/hono`](https://glandjs.github.io/packages/hono/) | `1.1.0-beta` | The Hono 4 adapter, on Node and the edge |
+| [`@glandjs/node`](https://glandjs.github.io/packages/node/) | `1.1.0-beta` | The `node:http` adapter, zero dependencies |
 
 ## Quick example
 
@@ -33,11 +40,14 @@ import { GlandFactory } from '@glandjs/core'
 import { ExpressBroker } from '@glandjs/express'
 import { AppModule } from './app.module'
 
-const app = await GlandFactory.create(AppModule)
-const server = app.connectTo(ExpressBroker)
+const { app, shutdown } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker)
 
-server.json()
-server.listen(3000)
+http.bodyParser({ json: true })
+http.listen(3000)
+await http.ready()
+
+process.once('SIGTERM', () => void shutdown('SIGTERM'))
 ```
 
 ```ts
@@ -81,19 +91,51 @@ pnpm dev      # http://localhost:4321
 
 | Script | Does |
 | --- | --- |
-| `pnpm dev` | Start the dev server |
-| `pnpm build` | Build to `dist/` |
+| `pnpm dev` | Sync the repositories, then start the dev server |
+| `pnpm build` | Sync the repositories, then build to `dist/` |
 | `pnpm preview` | Serve the production build |
 | `pnpm check` | `astro check` — types and templates |
+| `pnpm docs:sync` | Republish the mirrored documentation without building |
+| `pnpm docs:sync:watch` | Republish whenever a sibling checkout changes |
+| `pnpm docs:check` | Fail if a declared upstream document cannot be read |
+
+### Documentation is generated from the repositories
+
+Everything under `/reference` and `/changelog` is produced at build time from the
+`docs/` folder of each Gland repository — the API references, the HTTP guides, the
+adapter matrix, the changelogs and the pending changesets. A JSDoc block or a guide is
+written in the package it documents, and the site republishes it. Nothing is copied by
+hand, so nothing can drift.
+
+```text
+scripts/docs-sync/
+├── config.mjs        which repository, which file, which route — the only file to edit
+├── index.mjs         the CLI: read, convert, write, prune
+└── lib/
+    ├── sources.mjs   sibling checkout or raw.githubusercontent.com, with a cache
+    ├── markdown.mjs  front matter, headings, links
+    ├── pages.mjs     the page templates
+    ├── changesets.mjs  pending releases, published as "Unreleased"
+    ├── sidebar.mjs   derives the navigation from the config
+    └── frontmatter.mjs  a small YAML reader/writer
+```
+
+Publish a new document by adding one entry to `scripts/docs-sync/config.mjs`. Add a
+sibling checkout next to this repository and it is read from disk, so a change is
+documented before it is pushed; otherwise it is read from GitHub at a pinned commit.
+See [CONTRIBUTING.md](./CONTRIBUTING.md#mirroring-upstream-content).
 
 ### Structure
 
 ```text
+scripts/docs-sync/     Publishes the repositories into the site
 src/
 ├── assets/          Logo and images
 ├── components/      Astro components, incl. Starlight overrides
-├── content/docs/    The documentation (.mdx)
-├── data/            Sidebar order and package metadata
+├── content/docs/    The documentation
+│   ├── reference/   Generated, plus index.mdx
+│   └── changelog/   Generated
+├── data/            Sidebar order, package metadata, generated manifest
 ├── layouts/         Custom page layouts
 └── styles/          global.css — the design system
 ```
@@ -119,8 +161,8 @@ correction to a code sample or a missing caveat — please
 [open an issue](https://github.com/glandjs/glandjs.github.io/issues/new/choose) or a
 pull request.
 
-Documentation text for the package changelogs and API references is mirrored from the
-source repositories rather than written here. See
+Documentation text for the API references, the HTTP guides and the changelogs is
+generated from the source repositories rather than written here. See
 [Mirroring upstream content](./CONTRIBUTING.md#mirroring-upstream-content).
 
 ## License
