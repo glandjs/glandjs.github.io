@@ -1,0 +1,99 @@
+---
+title: 'From the repositories'
+description: 'Guides, API references and changelogs that the site publishes straight out of the Gland repositories.'
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+Everything in this section is **generated at build time** from the documentation that
+lives in the Gland repositories themselves. Nothing here is written twice: the guide
+you are reading is the same Markdown file that sits in the repository, and the version
+on the badge is the one that repository's `package.json` declares right now.
+
+## Why it is organised this way
+
+A JSDoc block, a guide or a changelog entry is written **in the package it documents**,
+because that is where the reader who needs it will look for it, and because that is
+where it is still correct. The site does not copy it, so it cannot drift.
+
+Concretely:
+
+| Step | What happens |
+| --- | --- |
+| **Read** | A sibling checkout next to this repository wins when one exists, so an edit is published before it is pushed. Otherwise the file is read from `raw.githubusercontent.com` at a pinned commit. |
+| **Convert** | The document's own title becomes page front matter, cross-links between mirrored documents become site links, and anything not mirrored becomes a link into the repository. |
+| **Generate** | Every page under `/reference`, every page under `/changelog`, the sidebar groups, and the version on every package card. |
+| **Publish** | The result is written into the content collection before Astro starts, so the pages are ordinary Starlight pages by the time the build reads them. |
+
+Not generated: the narrative pages — [Introduction](/introduction/what-is-gland),
+[Guides](/guides/testing), the [FAQ](/faq) — and the pages that describe a decision
+rather than an API.
+
+Pinning is what makes this trustworthy. Every mirrored page records the exact commit it
+came from, and its "Edit this page" link opens the upstream file, so a correction is
+made where the document lives.
+
+## Publishing something new
+
+Add an entry to `scripts/docs-sync/config.mjs` and it is on the site at the next build —
+no page is created by hand and no sidebar link is added by hand.
+
+```js title="scripts/docs-sync/config.mjs"
+{
+  id: 'http',
+  label: '@glandjs/http',
+  repo: 'glandjs/http',
+  ref: 'main',
+  workspace: 'http',
+  packages: [{ from: 'packages/http/package.json' }],
+  docs: [
+    {
+      from: 'docs/guides/cors.md',   // where the file is in the repository
+      route: 'guides/cors',          // where it lands on the site
+      title: 'CORS',
+      description: 'One policy, one implementation, five adapters.',
+      sidebar: { label: 'CORS', group: 'Guides', order: 9 },
+    },
+  ],
+  changelog: { from: 'docs/CHANGELOG.md', changesets: '.changeset' },
+}
+```
+
+## Running the sync yourself
+
+```bash
+pnpm docs:sync          # read sibling checkouts when they exist
+pnpm docs:sync:remote   # ignore local checkouts, always use GitHub
+pnpm docs:sync:watch    # re-publish whenever a checkout changes
+pnpm docs:check         # verify every configured source is readable
+```
+
+`dev` and `build` run the sync first, so there is nothing extra to remember. Set
+`GLAND_DOCS_SOURCE=local` to require a checkout and fail loudly if one is missing, or
+`GLAND_DOCS_SOURCE=remote` to always read from GitHub. `GITHUB_TOKEN` raises the API
+rate limit when many repositories are read in one run.
+
+<Aside type="tip" title="A changeset is documentation too">
+  The HTTP and core repositories release through [changesets](https://github.com/changesets/changesets)
+  rather than a hand-written changelog. Their changelog pages list the pending changesets
+  under **Unreleased**, so behaviour that is written but not yet published is documented
+  as soon as it is written.
+</Aside>
+
+## The repositories
+
+| Reference | Repository | Packages |
+| --- | --- | --- |
+| [`@glandjs/http`](/reference/http) | [`glandjs/http`](https://github.com/glandjs/http) | `@glandjs/http` and one adapter per server |
+| [`@glandjs/events`](/reference/events) | [`glandjs/events`](https://github.com/glandjs/events) | `@glandjs/events` |
+| [`@glandjs/emitter`](/reference/emitter) | [`glandjs/emitter`](https://github.com/glandjs/emitter) | `@glandjs/emitter` |
+| [`@glandjs/core`](/reference/core) | [`glandjs/gland`](https://github.com/glandjs/gland) | `@glandjs/core`, `@glandjs/common` |
+
+## Changelogs
+
+| Page | Source |
+| --- | --- |
+| [`@glandjs/http`](/changelog/http) | [`glandjs/http`](https://github.com/glandjs/http/blob/main/docs/CHANGELOG.md) and `.changeset/` |
+| [`@glandjs/events`](/changelog/events) | [`glandjs/events`](https://github.com/glandjs/events/blob/main/docs/CHANGELOG.md) |
+| [`@glandjs/emitter`](/changelog/emitter) | [`glandjs/emitter`](https://github.com/glandjs/emitter/blob/main/docs/CHANGELOG.md) |
+| [`@glandjs/core` & `common`](/changelog/core) | [`glandjs/gland`](https://github.com/glandjs/gland/blob/main/docs/CHANGELOG.md) and `.changeset/` |
