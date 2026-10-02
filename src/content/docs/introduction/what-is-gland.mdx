@@ -1,146 +1,239 @@
 ---
 title: What is Gland?
-description: Gland is an event-first, protocol-agnostic framework for Node.js. It separates business intent from transport mechanics using four small primitives.
+description: The four primitives Gland is built from — modules, controllers, channels and brokers — described as they actually work, including the edges.
 ---
 
 import { Aside } from '@astrojs/starlight/components'
 
+Gland is a framework for building server-side applications where **business logic is
+addressed by name** and **the transport is a separate package**. That is the whole idea.
+This page describes what that means in practice, including where it stops.
 
-Gland is an event-first, **protocol-agnostic** framework for building server-side
-applications in TypeScript and JavaScript. Its central premise is to treat domain
-behaviour as composable events rather than as monolithic request handlers, so that
-business intent stays separate from transport mechanics.
+Read [Why Gland?](/introduction/why-gland) first if you want the honest evaluation —
+including the parts that should make you hesitate.
 
-The framework keeps its core deliberately small. There are four ideas to learn, and
-everything else in the ecosystem is built out of them.
+## The shape of an application
 
-## The four primitives
+```ts
+// 1. One map. This is the entire contract.
+import type { IOEvent } from '@glandjs/events'
 
-| Primitive | Responsibility |
-| --- | --- |
-| **Module** | A composition boundary that registers controllers, channels and other modules. |
-| **Controller** | Receives an interaction, emits well-scoped domain events. Holds no side effects. |
-| **Channel** | Subscribes to events and performs side effects: persistence, responses, outbound calls. |
-| **Broker** | A protocol adapter that bridges an external transport to the event system. |
+type AppEvents = {
+  'order:created': IOEvent<{ total: number }, Order>   // payload in, result out
+  'order:paid': { orderId: string }
+}
 
-<Aside type="note" title="No magic">
-  Gland discovers your application by reading decorator metadata. There is no
-  convention-based guessing, no file-name scanning and no implicit global registry.
-  If it runs, you declared it.
-</Aside>
-
-## A complete application
-
-Four files, one HTTP endpoint. This is the shape of every Gland application.
-
-**`src/product.channel.ts`** — the side effect lives here.
-
-```ts title="src/product.channel.ts" ins={6}
-import { Channel, On } from '@glandjs/common'
-
-@Channel('product')
-export class ProductChannel {
-  private products = new Map<string, { id: string; name: string }>()
-
-  @On('list')
-  list() {
-    return Array.from(this.products.values())
+// 2. A channel owns one named thing and its side effects.
+@Channel('order')
+export class OrderChannel {
+  @On('created')                                    // → 'order:created'
+  async create({ total }: { total: number }): Promise<Order> {
+    return this.repo.save({ total })
   }
 }
-```
 
-**`src/product.controller.ts`** — the controller only translates and emits.
-
-```ts title="src/product.controller.ts"
-import { Controller } from '@glandjs/common'
-import { Get } from '@glandjs/http'
-import type { ExpressContext } from '@glandjs/express'
-
-@Controller('products')
-export class ProductController {
-  @Get()
-  list(ctx: ExpressContext) {
-    return ctx.send(await ctx.call('product:list', {}))
+// 3. A controller translates and replies. It performs no side effects.
+@Controller('/orders')
+export class OrderController {
+  @Post()
+  async create(ctx: HttpContext<any, any, AppEvents>) {
+    return ctx.call('order:created', { total: 42 })  // by name, typed both ways
   }
 }
-```
 
-**`src/app.module.ts`** — wiring.
-
-```ts title="src/app.module.ts"
-import { Module } from '@glandjs/common'
-import { ProductController } from './product.controller'
-import { ProductChannel } from './product.channel'
-
-@Module({
-  controllers: [ProductController],
-  channels: [ProductChannel],
-})
+// 4. A module registers what exists.
+@Module({ imports: [OrderModule], controllers: [OrderController], channels: [OrderChannel] })
 export class AppModule {}
 ```
 
-**`src/main.ts`** — bootstrap and attach a transport.
+`OrderChannel` imports nothing from the order flow's other side effects. Adding a fifth
+reaction is a new file and one line in `@Module`.
 
-```ts title="src/main.ts" ins={6}
-import { GlandFactory } from '@glandjs/core'
-import { ExpressBroker } from '@glandjs/express'
-import { AppModule } from './app.module'
+## The four primitives
 
-async function bootstrap() {
-  const { app } = await GlandFactory.create(AppModule)
-  const http = app.connectTo(ExpressBroker)
-  http.listen(3000)
-  await http.ready()
-}
+### Modules — composition boundaries
 
-void bootstrap()
+```ts
+@Module({ imports: [], controllers: [], channels: [] })
 ```
 
-`GlandFactory.create()` scans the module graph, instantiates everything, runs the
-lifecycle hooks and binds discovered routes and channels — and resolves only once that
-is done. `connectTo()` attaches a protocol broker and hands you back the transport
-application object.
+Exactly three keys. There is no `providers`, no `useFactory`, no `useValue` and no scope —
+a class is only constructible if it is a `@Channel` or a `@Controller`. Modules group code
+and resolve nothing; two modules can register the same channel name only if the second one
+fails at startup.
+
+### Controllers — translation only
+
+A controller reads the request, calls or emits something by name, and replies. It never
+imports a service and never touches the framework's response object.
+
+```ts
+@Get('/:id')
+async find(ctx) {
+  return ctx.call('order:find', { id: ctx.params.id })
+}
+
+@Post()
+async create(ctx) {
+  return ctx.call('order:created', { total: 42 })
+}
+```
+
+<Aside type="note" title="What a handler may return">
+  The **return value is the response**. `undefined` sends nothing, a plain object is JSON, a
+  string is text (or HTML if it looks like HTML), a number is JSON, a `Buffer` is bytes, a
+  `Readable` is piped, and an `HttpReply` does exactly what it says. Returning the context
+  also works. See [Replies](/reference/http/guides/replies).
+</Aside>
+
+### Channels — the unit of composition
+
+```ts
+@Channel('payment')
+export class PaymentChannel {
+  @On('order:created')          // namespaced: 'payment:order:created'
+  async charge({ orderId }) { /* … */ }
+}
+```
+
+A channel is registered by name, instantiated once as a singleton, and its event names must
+be globally unique. Both are enforced at startup, not at request time.
+
+Channels are where side effects live, which is what makes them independently testable:
+
+```ts
+const ctx = app.createContext()          // no server involved
+const order = await ctx.call('order:created', { total: 42 })
+```
+
+### Brokers — the transport seam
+
+```ts
+const { app, shutdown } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker)   // or FastifyBroker, KoaBroker, HonoBroker, NodeBroker
+```
+
+`@glandjs/core` has no notion of a request. Routing, the context, body parsing and CORS all
+come from `@glandjs/http` and an adapter. `connectTo()` takes the broker **class**, links
+its event bus to the core bus, and hands you back the transport application.
+
+<Aside type="caution" title="The swap is cheaper at the type level than the semantic one">
+  The same controller compiles against all five adapters. The *behaviour* does not fully
+  match: `ctx.ip`, `ctx.accepts()`, `ctx.signedCookies` and `ctx.download()` have different
+  implementations, and `https` and `trustProxy` are currently ignored by every adapter. The
+  [adapter matrix](/reference/http/adapter-matrix) is the list; read it before you depend on
+  any of them.
+</Aside>
 
 ## How a request flows
 
-1. A broker receives a transport signal and builds a **context** object for it.
-2. The router matches the context to a **controller** method.
-3. The controller calls `ctx.emit(...)` for fire-and-forget work, or `ctx.call(...)`
-   when it needs a result back, and then replies with `ctx.send(...)`.
-4. The event is resolved to a **channel** handler through the channel registry and
-   invoked with the payload.
-5. The handler's return value travels back to the controller for `ctx.call()`.
+1. The adapter matches a route and builds an `HttpContext` — memoised, so middleware and the
+   handler see the same object.
+2. `http:request:start` is emitted with `{ id, method, path, url, ip }`.
+3. Gland middleware runs in registration order as a promise onion.
+4. The controller calls `ctx.call('name', payload)`. The name resolves through a frozen
+   registry — an unknown name is an immediate error listing the valid ones.
+5. The channel handler runs and returns. `ctx.call()` hands that value back.
+6. The return value is coerced to a reply by one function shared by all five adapters.
+7. `http:request:end` fires with `{ status, duration }` — always, even on failure.
 
-The controller never learns which class handled the event, and the channel never
-learns which transport triggered it.
+The channel never sees the context. It receives the payload and returns a value, which is
+what makes it testable without a server — and also means a channel cannot read
+`ctx.state`, so anything from the request has to be passed in the payload.
 
-## Why events instead of method calls
+## The two buses on a context
 
-Calling a service directly from a controller is the shortest possible path, and it is
-the one that hurts the most later. It couples HTTP to your domain, it hides side
-effects, and it makes the interesting question — *what actually happened?* — impossible
-to answer in a test.
+This trips people up, so it is worth stating plainly:
 
-Routing interaction through events inverts the dependency. The controller states an
-intent; a channel decides how to satisfy it. From that you get, for free:
+```ts
+ctx.emit('order:created', payload)   // → the CORE bus, reaches channels
+ctx.call('order:created', payload)   // → the CORE bus, returns the handler's value
 
-- **Replaceable side effects.** Swap the persistence channel for an HTTP one and the
-  controller is untouched.
-- **Cheap tests.** Assert that a controller emitted `product:list`. Call the channel
-  with a fake context. No server, no network.
-- **Fan-out.** Several channels can answer the same event without the controller
-  knowing they exist.
-- **One domain, many transports.** The same modules run under any broker.
+ctx.on('some:event', handler)        // → the ADAPTER's lifecycle bus
+```
 
-<Aside type="tip" title="Gland is not an HTTP framework">
-  `@glandjs/core` knows nothing about requests or responses. If you never attach a
-  broker you get a perfectly working event-driven application with no network surface
-  at all — which is exactly how you unit-test it.
+`ctx.on` / `ctx.off` / `ctx.once` are for **framework-level observation** — the transport's
+own lifecycle events. They do not reach channel handlers. If you want a listener on an
+application event, use `@On()` in a channel.
+
+## `ctx.call` vs `ctx.emit`
+
+| | `call` | `emit` |
+| --- | --- | --- |
+| Handlers reached | the one registered for that exact name | every listener, including wildcards |
+| Returns | the handler's value | `this`, for chaining |
+| Nothing listening | returns `[]` | silently does nothing |
+| Throws | the handler's error | aborts every remaining listener |
+
+<Aside type="caution" title="Two edges you will meet">
+  **`call()` returns `[]` when nothing is listening** — in both forms, even though the
+  single-result overload is typed as a scalar. Validate the result.
+
+  **`IOEvent` is what makes the return type real.** A plain type in the map gives you a
+  payload and a `void` return. Declaring `'order:created': IOEvent<Payload, Order>` is what
+  makes `ctx.call` return an `Order` instead of `void`.
 </Aside>
 
-## Where to go next
+## Typing it properly
 
-- [Why Gland?](/introduction/why-gland) — the trade-offs, stated plainly.
-- [Architecture](/introduction/architecture) — how a bootstrap actually flows.
-- [Installation](/getting-started/installation) — get it running in a minute.
-- [First steps](/getting-started/first-steps) — build the example above, for real.
+```ts
+// ✓ a plain type — names and payloads are both enforced
+type AppEvents = {
+  'order:created': IOEvent<{ total: number }, Order>
+}
+
+// ✗ a trap: EventRecord is Record<string, any>, so extending it
+//   installs an index signature and nothing is checked any more
+interface AppEvents extends EventRecord {
+  'order:created': { total: number }
+}
+```
+
+Pass the map to the adapter so it reaches the handler signature:
+
+```ts
+const http = app.connectTo(ExpressBroker<AppEvents>, { poweredBy: false })
+```
+
+Without it the context defaults to an index-signature map and `ctx.call('anything', …)`
+type-checks.
+
+## What you must set up yourself
+
+Gland is the composition layer. These do not exist and you will write them:
+
+- **Request and response validation.** `ctx.body` is `any` and nothing checks it.
+- **Auth.** A middleware on the onion; there are no guards or decorators.
+- **Logging.** No injection point — the framework constructs its own logger internally.
+- **Graceful shutdown.** Signal handlers are only installed when `GLAND_DEBUG` is set, so in
+  production `SIGTERM` does nothing until you wire it:
+
+  ```ts
+  process.once('SIGTERM', async () => {
+    await http.close()        // drain in-flight requests
+    await shutdown('SIGTERM') // run onAppShutdown / onModuleDestroy
+  })
+  ```
+
+## What it is
+
+- A small, typed, event-first way to address side effects by name.
+- One HTTP contract with five interchangeable transports behind it, and a contract suite
+  that holds them to it.
+- A composition layer that stays out of the way of everything else — no ORM, no config
+  system, no CLI, no admin UI.
+
+## What it is not
+
+- A distributed message bus. [Events do not leave the process](/introduction/why-gland#the-boundary-it-does-not-cross).
+- A batteries-included platform.
+- A NestJS replacement with the same feature list. It has different ones.
+
+## Next
+
+- [Why Gland?](/introduction/why-gland) — the honest evaluation, and a decision rule
+- [Architecture](/introduction/architecture) — the bootstrap sequence, step by step
+- [Modules](/fundamentals/modules) · [Controllers](/fundamentals/controllers) · [Channels](/fundamentals/channels)
+- [Working with the context](/getting-started/working-with-the-context)
+- [The event map](/packages/events) — `IOEvent`, wildcards, watchers and the mesh API
+- [The HTTP layer](/packages/http) · [Writing a broker](/guides/protocol-brokers)

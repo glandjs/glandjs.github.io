@@ -126,10 +126,12 @@ right first choice:
 - **A single catch-all route.** `http.all('*')` works, but Express's own `app.use` order
   still decides what a request sees first.
 
-<Aside type="tip">
-  The same application on every transport is `examples/<adapter>/hello-world.ts` in the
-  repository: the controller, the channel, the module and the middleware are
-  byte-for-byte identical and only the import and `connectTo()` change.
+<Aside type="caution" title="The examples are not byte-for-byte identical">
+  `examples/<adapter>/hello-world.ts` demonstrates the same *application* on each
+  transport — same controller, same channel, same module, same middleware. The
+  handler signatures are not identical, though: each one names its adapter's own
+  context class, so a signature changes per transport. The
+  [adapter matrix](/reference/http/adapter-matrix) is the honest list of what differs.
 </Aside>
 
 ## See also

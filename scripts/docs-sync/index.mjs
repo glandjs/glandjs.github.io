@@ -205,11 +205,39 @@ async function main() {
   }
 
   // Remove files written by a previous run that the config no longer produces.
-  const previous = await readManifestFiles()
-  const keep = new Set(written.map((entry) => entry.file))
-  for (const file of previous) {
-    if (!keep.has(file)) await remove(path.join(root, file))
+//
+// This is the one destructive thing the script does, so it is guarded hard. A run that
+// resolves nothing — a checkout that was renamed or moved, `GLAND_DOCS_SOURCE=local`
+// on a machine without the sibling folders, a network outage — would otherwise prune
+// the entire section and publish a site with a hole where the reference should be. A
+// generator that can empty itself is worse than one that fails loudly.
+const previous = await readManifestFiles()
+const keep = new Set(written.map((entry) => entry.file))
+const prune = previous.filter((file) => !keep.has(file))
+
+if (prune.length) {
+  if (!keep.size) {
+    warn('nothing resolved, so no page was removed. Check the repositories in config.mjs.')
+  } else {
+    const survivors = new Map()
+    for (const file of keep) {
+      const key = file.split(path.sep).slice(0, 3).join(path.sep)
+      survivors.set(key, (survivors.get(key) ?? 0) + 1)
+    }
+
+    for (const file of prune) {
+      const key = file.split(path.sep).slice(0, 3).join(path.sep)
+      if (!survivors.has(key)) {
+        warn(`${file} would remove the whole ${key} section, so it was kept.`)
+        continue
+      }
+      // Never suppressed by --quiet: a page disappearing from the site is not a
+      // message the operator should have to ask for.
+      console.log(`  - removed ${file}`)
+      await remove(path.join(root, file))
+    }
   }
+}
 
   // `--check` is a preflight: it proves every declared source is readable without
   // touching the content collection. The build does the writing.

@@ -123,7 +123,11 @@ and it is always mounted **first**.
 ## What it cannot do
 
 - **`useRaw()`** — there is no `use()` in `node:http`, so the adapter warns and ignores
-  it. `useStaticAssets()` queues a wildcard route instead.
+  it.
+- **`useStaticAssets()`** — as of 1.1.0-beta this queues a `raw` entry that `useOne()` then
+  rejects with *"useRaw() has no meaning on the node:http adapter"*, so **it is currently a
+  no-op**. Serve static files yourself, or pick another adapter. A changeset is pending for
+  this; see the [changelog](/changelog/http).
 - **Multipart** — stream it yourself; the collector buffers.
 - **`trustProxy`** — nothing reads `X-Forwarded-*`, so `ctx.ip` is
   `socket.remoteAddress`.

@@ -1,48 +1,135 @@
 ---
 title: Why Gland?
-description: The trade behind Gland stated plainly — what you get for it, where its real limits are, and a decision rule for whether to reach for it.
+description: An honest assessment of Gland against a service class and against NestJS — the four things it genuinely does better, the boundary it does not cross, and a decision rule.
 ---
 
 import { Aside } from '@astrojs/starlight/components'
 
-Frameworks are trade-offs. This page states Gland's, so you can decide whether they are
-the ones you want to make — and it tries to be as useful to you when the answer is no.
+This page exists to be useful, including when the answer is **no**. Everything below is
+checked against the source, and the weaknesses are stated before the strengths in the
+places where the weaknesses are the deciding factor.
 
-## The trade, in one sentence
+## The claim being examined
 
-You give up Nest's ecosystem, its conventions and its batteries, and in return you get
-two things: **side effects that are addressable by name**, and **a transport that is a
-replaceable part rather than the shape of your application.**
+> "Gland decouples your business logic through events, and lets you swap the transport
+> freely."
 
-That is a narrow trade. It is worth it if your domain logic is real. It is not worth it
-if your controller body is one database read.
+Both halves are true at the type level. Neither is true at the level most people mean, and
+knowing where the line falls is the whole point of this page.
 
-## What you actually write
+## What it genuinely does better
 
-Take the flow everyone already knows:
+### One reply-coercion function across five transports
 
-```text
-OrderCreated
- ├── Payment
- ├── Notification
- ├── Inventory
- ├── Analytics
- └── Coupon
-```
+`@glandjs/http` decides what goes on the wire in exactly one place,
+[`toReplyPayload`](/reference/http/api), and every adapter routes through it. Left to the
+frameworks, `return { ok: true }` becomes `application/json` on some adapters and
+`text/html` on others, `return 42` means three different things, and a `204` is inferred on
+one and not another.
 
-### The service-class version
+The repository enforces this with a shared contract suite that runs the same controller
+against all five adapters. That suite is the most valuable artefact here — more valuable
+than the adapter layer itself.
+
+### Failing at the call site, with the valid names
 
 ```ts
-// order.service.ts
+await ctx.call('db:product:creat', { id })   // immediately:
+// UnknownEventError: 'db:product:creat' is not a registered event.
+// Did you mean: db:product:create, db:product:find?
+```
+
+A name that does not exist is a hard error **at the call site**, listing up to forty real
+names. Compare the nearest equivalent elsewhere — a missing dependency reported at boot
+with no list of what was available. Duplicate channel names also fail at startup, with both
+owners named.
+
+This is not a small thing. Most of what makes event-driven code painful is the typo you
+ship on Friday.
+
+### A middleware onion that behaves the same everywhere
+
+Every adapter inherits one ordering rule from `HttpServerAdapter.finalize()`: framework
+configuration, then middleware in call order, then deferred plugins, then routes, then the
+catch-all 404 *behind* the routes. That ordering is decided once, by buffering, and it is
+the reason `app.use(auth)` behaves identically on all five transports instead of depending
+on when you called it.
+
+On Koa, Hono and `node:http` you get a real promise onion. On Express you do not, and the
+[adapter matrix](/reference/http/adapter-matrix) says so rather than pretending.
+
+### Named capability, resolved at runtime
+
+```ts
+// order.controller.ts
+@Post()
+async create(ctx) {
+  return ctx.call('order:created', { total: 42 })
+}
+```
+
+`OrderChannel` imports no other channel. Adding a fifth reaction to an order flow is a new
+file and one line in `@Module` — not a constructor edit and a method edit in a class that
+already knows about four responsibilities.
+
+And the same `ctx.call()` works from a CLI, a cron job or a queue consumer with no server
+at all, via `app.createContext()`.
+
+## The boundary it does not cross
+
+**Gland's events never leave the process.** `connectTo(broker)` takes a broker *instance*.
+There is no socket, no serialisation, no acknowledgement. It is a method call over an
+adjacency map — "mesh" and "hop" are names, not network.
+
+What that means in production:
+
+| Deployment | What actually happens |
+| --- | --- |
+| 1 instance | Everything works. `emit` fans out locally, `call` resolves locally. |
+| 3 instances behind a load balancer | An event reaches **only the instance that served the request**. Two thirds of your listeners never run, chosen at random by the balancer. Nothing is logged. |
+| 3 instances | `ctx.call()` on an event whose handler is not on this instance returns `[]` — an empty result, typed as a successful value. A coin flip that returns an empty array instead of an error. |
+
+<Aside type="danger" title="This is the one that will bite you">
+  Scale out and `ctx.call()` silently degrades to "sometimes empty". Nothing throws,
+  nothing is logged, and the type system says the call succeeded. If you run more than
+  one instance, the side effects behind a channel **must** be reachable from any instance —
+  which in practice means a real queue behind the channel, not behind the framework.
+</Aside>
+
+There is a second consequence nobody documents on `emit`: **a listener that throws stops
+every listener after it, and prevents the event from reaching connected brokers at all.** A
+`try/catch` per side effect in a service method isolates failures; `emit` does not. If you
+are relying on one side effect failing harmlessly while the others succeed, you need to
+wrap the handler, not the emitter.
+
+## Where the seams are thinner than they look
+
+The transport swap is real for routing, context shape, middleware ordering and reply
+coercion. It is not real for these, and they are checked by reading the five adapters rather
+than by the contract suite:
+
+| | Divergence |
+| --- | --- |
+| `ctx.ip` | Derived from the socket on Express, Koa, Fastify and `node:http`. On Hono it reads `x-forwarded-for` — **a client-controlled header**. If you rate-limit or audit on `ctx.ip`, that string is attacker-chosen. |
+| `ctx.accepts()` | Returns `false` with no `Accept` header on Express and Koa; `'*/*'` — a value never passed in — on the other three. |
+| `ctx.signedCookies` | Real on Express only. `{}` elsewhere. A session check written one way reads as "no session"; written the other, it reads as authorised. |
+| `ctx.download()` | Hono rebuilds the response without headers, so `Content-Disposition` is dropped. Silent, and it is the most common "send the user a file" call. |
+| `https` | The option is accepted by the interface and ignored by all five adapters, because none receives it. You get a plaintext server on your TLS port. |
+| `trustProxy` | Same cause, same result. Nothing reads `X-Forwarded-*`. |
+| `useRaw()` | Missing on Fastify and `node:http`. `useRaw(helmet())` warns and does nothing — an app that believes it has Helmet does not. |
+| `useStaticAssets()` | A no-op on `node:http` right now. |
+
+Read that table as: **the seam is in the types, not in the semantics.** If your application
+depends on any of these rows, swapping costs you a real audit, not an import change.
+
+## What a service class does instead
+
+```ts
 @Injectable()
 export class OrderService {
-  constructor(
-    private readonly payment: PaymentService,
-    private readonly inventory: InventoryService,
-    private readonly notification: NotificationService,
-  ) {}
+  constructor(payment, inventory, notification) {}
 
-  async create(dto: CreateOrderDto) {
+  async create(dto) {
     const order = await this.repo.save(dto)
     await this.payment.charge(order)
     await this.inventory.reserve(order)
@@ -52,215 +139,122 @@ export class OrderService {
 }
 ```
 
-Adding `Analytics` means opening `OrderService`, injecting one more thing, and adding a
-line to a method that is now four side effects long. There is no seam — the
-dependencies are constructor arguments, so the shape of the work is the shape of the
-class.
-
-### The Gland version
-
-```ts
-// shared/events.ts — one map, the whole contract
-export type AppEvents = {
-  'order:created': IOEvent<{ orderId: string; total: number }, Order>
-}
-
-// order.channel.ts
-@Channel('order')
-export class OrderChannel {
-  @On('created')
-  async create(payload: EventPayload<AppEvents, 'order:created'>): Promise<Order> {
-    return this.repo.save(payload)
-  }
-}
-
-// payment.channel.ts
-@Channel('payment')
-export class PaymentChannel {
-  @On('order:created')          // namespaced to payment:order:created
-  async charge({ orderId }) { /* … */ }
-}
-
-// inventory.channel.ts
-@Channel('inventory')
-export class InventoryChannel {
-  @On('order:created')
-  async reserve({ orderId }) { /* … */ }
-}
-```
-
-```ts
-// order.controller.ts — translates and replies
-@Controller('/orders')
-export class OrderController {
-  @Post()
-  async create(ctx: HttpContext<AppEvents>) {
-    return ctx.call('order:created', { total: 42 })
-  }
-}
-```
-
-`OrderChannel` imports no other channel. `PaymentChannel` imports nothing from the
-order side. Adding `Analytics` is a new file registered in the module — `OrderChannel`
-and `OrderController` are untouched.
-
-<Aside type="note" title="This is not pub/sub, and that is the point">
-  `emit()` is broadcast: fire-and-forget, every listener, no return value.
-  `ctx.call()` is the other thing — **addressed request/response** to one named
-  channel, with the result type declared by `IOEvent<Payload, Return>`. It is a
-  service lookup that resolves by name at runtime instead of by import at compile
-  time, and it is what makes the controller above return an `Order`.
-</Aside>
-
-The trade is real in both directions: indirection you can feel while reading, and the
-extra file. You are buying the ability to change a side effect without editing a class
-that already knows about five of them.
-
-## Compared to a service class
-
-This is the honest alternative — what most codebases would build if not for Gland.
-
-| | Service classes | Gland |
+| | Service class | Gland |
 | --- | --- | --- |
-| Controller depends on | injected instances | the event map |
-| Side effects live in | services, wired by hand | channels, registered by name |
-| Adding a side effect | edit the controller and its constructor | add a channel to the module |
-| Order of side effects | the order you wrote in the method | the order handlers register |
-| Testing one side effect | construct it with fakes | call it with a fake context |
-| Removing a side effect | find every import of it | delete the file |
+| Controller depends on | injected instances | a name |
+| Adding a side effect | edit the constructor and the method | add a channel to the module |
+| One side effect throws | only that statement, with `try/catch` | every listener after it, and the peers too |
+| Side effect order | the order you wrote | registration order |
+| Reaching a side effect in a test | construct it with fakes | call it with a fake context |
+| Failure visible in the request | no, by design | yes — a 500 from a handler that succeeded |
 
-The row that decides it for most people is **adding a side effect**. Everything else is
-a matter of taste.
+Gland buys **addressability by name** and **compile-time payload checking**. It does not
+buy failure isolation, ordering guarantees, or "fail at startup if nothing calls this".
 
 ## Compared to Nest
 
-Nest is a mature framework solving a different problem well, and its
-`@nestjs/event-emitter` is genuinely the same primitive: an in-process emitter. So if
-your reason for choosing Gland is "it has events and Nest does not", that reason is
-wrong.
-
-Where they actually differ:
+Nest is mature, and its `@nestjs/event-emitter` is genuinely the same primitive — an
+in-process emitter. If your reason for choosing Gland is "it has events and Nest does not",
+that reason is wrong.
 
 | | Nest | Gland |
 | --- | --- | --- |
 | Units are | classes, wired by constructor | channels, addressed by name |
-| A side effect is reached by | an import | `ctx.call('name', payload)` |
-| Replace the HTTP layer | replace Nest's abstractions | swap `@glandjs/express` for `@glandjs/node` |
-| Ecosystem | large, the reason most people choose it | small; you assemble the rest |
-| Convention | strong, and enforced | loose; there is less to learn and less to fight |
+| Validation | `class-validator`, `ValidationPipe`, DTOs | **none** |
+| Extension points | guards, interceptors, pipes, exception filters | a middleware chain and one replaceable error handler |
+| Logging | injectable, nest-scoped | **no injection point** — constructed internally |
+| Graceful shutdown | wired by default | **not installed in production** |
+| Ecosystem | large, and the reason most people choose it | small; you assemble the rest |
 
-Read the first three rows as one sentence: **Gland's unit of composition is a named
-capability, not a class.** That is a real difference and it is the only one. If your
-team values Nest's ecosystem and conventions more than that, Nest is the right answer
-and nothing here should convince you otherwise.
+Read the last four rows carefully. They are the reason most teams should choose Nest, and
+they are not close.
 
-## Where the cliff is
+<Aside type="caution" title="Two concrete gaps, verified in the source">
+  **There is no request validation.** `ctx.body` is `any`, and nothing validates it on the
+  way in or the way out. On a project where that matters — and most do — you are writing
+  a validation layer before you write a feature.
 
-This is the section that matters most when you are evaluating Gland, and it is the one
-people find out about in production.
-
-**Gland's events do not leave the process.** `EventBroker.connectTo(broker)` takes a
-broker *instance*. There is no serialisation, no acknowledgement and no network hop.
-
-That buys speed and simplicity, and it has four consequences you must design around:
-
-| | Consequence |
-| --- | --- |
-| **Scale out** | With three app servers behind a load balancer, an event emitted on one does not reach listeners on the other two. Whatever listens must be reachable on the process that emitted. |
-| **Durability** | A crash between `emit()` and the listener running loses the event. There is no replay and no dead-letter queue. |
-| **Ordering** | No cross-process ordering. Fine for analytics; not for a ledger. |
-| **Delivery** | At-most-once, and a listener that throws stops the ones after it — the same semantics as Node's own `EventEmitter`. |
-
-<Aside type="caution" title="Know your graduation trigger before you start">
-  The moment you need work to survive a restart, cross process boundaries, or be
-  retried, you move that side effect behind a real queue or broker and call it from a
-  channel. The channel stays; the transport changes. Plan for that migration on day one
-  if you suspect it is coming, because the channel boundary is what makes it a
-  migration instead of a rewrite.
+  **Graceful shutdown is not wired up in production.** The signal and `uncaughtException`
+  handlers are only installed when a logger exists, and the bootstrap suppresses the logger
+  unless `GLAND_DEBUG` is set. So in a normal production boot, `SIGTERM` does nothing and
+  you must hand-roll it. Every example in the repositories does exactly that. Set
+  `process.on('SIGTERM', …)` yourself and call `http.close()` then `shutdown()`.
 </Aside>
 
-Being explicit about this matters more than the feature set. A framework that hides
-where its boundary is will surprise you at 3 a.m.
+Where they genuinely differ is narrower than the pitch suggests: **Gland's unit of
+composition is a named capability, not a class.** That is a real difference, and it only
+matters when your side effects change independently. If your team values Nest's ecosystem,
+validation and extension points more than that, Nest is the right answer and nothing here
+should convince you otherwise.
 
-## What it is good at
+## What Gland is not for
 
-- **APIs with real domain logic.** Order flows, payment state machines, multi-step
-  onboarding — anything where a controller that only translates is a win.
-- **Side effects that change independently.** Pricing rules, fraud checks, notification
-  preferences — the cases where editing one service to add a fifth responsibility is
-  where the coupling actually hurts.
-- **Message and event pipelines.** Gating, enrichment and fan-out expressed as channels
-  subscribing to a namespace.
-- **Contracts you can refactor against.** One event map, checked at compile time and
-  validated at bind time.
-- **Running the same domain outside HTTP.** `app.createContext()` gives a CLI, a cron
-  job or a worker the same `call()` a request handler gets, with no server.
-- **Betting on a seam.** If you think the HTTP layer is the part most likely to be
-  replaced in your project's life, having it behind one import is worth something.
-
-## What it is not for
-
-- **CRUD-only services.** If a controller body is a single database read, the channel
-  layer is ceremony, and you should write the route handler.
-- **Distributed work.** Multi-process coordination, guaranteed delivery, replay. Use a
-  real broker; Gland is not one and does not pretend to be.
-- **Teams that want a platform.** No ORM, no config system, no CLI, no admin UI. Gland
-  is the composition layer and you pick everything else.
-- **Serverless cold starts as the primary constraint.** The container builds the module
-  graph on boot — cheap, but not zero.
-- **Adopting today without reading the adapter matrix.** The HTTP layer ships under the
-  `beta` tag and is changing between minor versions.
+- **Multi-instance deployments that rely on events reaching every instance.** Single-process
+  until you put a real broker behind a channel.
+- **Anything needing delivery guarantees, replay or cross-process ordering.**
+- **Projects where validation, auth guards or logging injection are table stakes.** None of
+  the three exist.
+- **CRUD-only services.** If a controller body is one database read, the channel layer is
+  ceremony and plain handlers are better.
+- **Serverless as the primary target.** The container builds the module graph on boot.
 
 ## A decision rule
 
 Use Gland if **most** of these are true:
 
-- Side effects are the interesting part of your application, not the plumbing.
+- Side effects are the interesting part of your application, not the plumbing, and they
+  change after launch.
 - You can name what a piece of work does, and it is not `doEverything()`.
-- You will add or remove side effects after launch.
-- You are willing to read the adapter matrix before depending on the HTTP layer.
-- Your deployment is a single process, or your side effects do not need to cross it.
+- You are deploying **one instance**, or you will put a real broker behind the channels.
+- You are willing to write the validation, auth, logging and shutdown layers yourself.
+- You read the [adapter matrix](/reference/http/adapter-matrix) and the
+  [in-process limitations](/introduction/why-gland#the-boundary-it-does-not-cross)
+  before depending on it.
 
 Stay with Nest — or with plain route handlers — if any of these are true:
 
-- You want an ORM, a CLI, queues, caching and a config system in one dependency.
+- You need validation, an ORM, a CLI, queues, caching and a config system in one dependency.
+- You run more than one instance and have not planned for the cross-process problem.
 - Most of your endpoints are read-one-write-one.
-- You need delivery guarantees or cross-process coordination now.
-- Your team is faster with an ecosystem than with a five-file concept.
+- You want the framework to make cross-cutting concerns (auth, logging, caching) a
+  one-line decorator rather than a project.
 
-Plain route handlers are a legitimate answer, and the page above is not an argument
-against them. It is an argument about what to reach for when the domain has more than
-one moving part.
+Plain route handlers are a legitimate answer and this page is not an argument against them.
+It is an argument about what to reach for when the domain has more than one moving part —
+and an argument for reading the table of divergences before you decide.
 
 ## Design commitments
 
 These are the rules the codebase is held to. They are the reason the API is small.
 
-1. **No hidden behaviour.** A method does one thing, and the docs can state what that
-   thing is without a caveat.
-2. **Composition over configuration.** New capabilities are new packages or channels,
-   never new switches on existing ones.
-3. **Types are the contract.** The event map is the single source of truth for what
-   crosses a boundary.
-4. **Fail at startup, not at 3 a.m.** Duplicate channel names, unresolvable
-   dependencies and circular references are all detected during bootstrap.
-5. **Boundaries are documented, including the inconvenient ones.** The
-   [adapter matrix](/reference/http/adapter-matrix) lists what each transport cannot do,
-   because a framework that hides its limits will surprise you later.
+1. **No hidden behaviour.** A method does one thing, and the docs can state what that thing
+   is without a caveat.
+2. **Composition over configuration.** New capabilities are new packages or channels, never
+   new switches on existing ones.
+3. **Types are the contract.** One event map is the single source of truth for what crosses a
+   boundary.
+4. **Fail at startup, not at 3 a.m.** Duplicate channel names, unresolvable dependencies and
+   circular references are all detected during bootstrap.
+5. **Boundaries are documented, including the inconvenient ones.** That is why this page
+   exists and why the [adapter matrix](/reference/http/adapter-matrix) lists what each
+   transport cannot do.
 
 <Aside type="tip" title="Judging it fairly">
-  Gland is young, its HTTP layer ships under the `beta` tag, and nothing on this page is
-  a claim that it is ready for a system you cannot afford to debug. If you need a proven
-  HTTP stack today, run Gland channels beside Express and keep Express for routing — the
-  two compose without either one knowing about the other. If you want to try it, start
-  with one channel for one side effect and see whether the indirection earns its keep on
-  your code before you commit to it for the rest.
+  Gland is young. The HTTP layer ships under the `beta` tag and is changing between minor
+  versions; `@glandjs/events` is at 2.0.0 with breaking changes. Nothing here is a claim
+  that it is ready for a system you cannot afford to debug.
+  <br />
+  If you want to try it: start with one channel for one side effect, on one instance, and
+  see whether the extra file earns its keep on your code before committing to it for the
+  rest. And if you need a proven HTTP stack today, run Gland channels beside Express and
+  keep Express for routing — the two compose without either one knowing about the other.
 </Aside>
 
 ## Next
 
-- [What is Gland?](/introduction/what-is-gland) — the four primitives
+- [What is Gland?](/introduction/what-is-gland) — the four primitives, precisely
 - [Channels](/fundamentals/channels) — the unit of composition
-- [The event map](/packages/events) — types, `IOEvent`, and the broker API
+- [The event map](/packages/events) — `IOEvent`, and the broker API including its edges
 - [The HTTP layer](/packages/http) — one core, five transports
+- [The adapter matrix](/reference/http/adapter-matrix) — what each transport cannot do
 - [Writing a broker](/guides/protocol-brokers) — the seam is eleven lines of `abstract`
