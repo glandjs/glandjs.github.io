@@ -1,11 +1,10 @@
 ---
 title: '@glandjs/events'
-badge: '@glandjs/events@1.1.2'
-description: The namespaced event broker — channels, mesh networking, request/response calls, async watchers and loop-safe propagation.
+badge: '@glandjs/events@2.0.0'
+description: The namespaced event broker — channels, mesh networking, request/response calls, async watchers and loop-safe propagation.'
 ---
 
 import { Aside } from '@astrojs/starlight/components'
-
 
 `@glandjs/events` is the event backbone of Gland. Where `@glandjs/emitter` is a local
 pub/sub primitive, a **broker** is a stateful, connectable node: it owns a namespace,
@@ -15,10 +14,17 @@ exposes channels, can be linked into a mesh, and can turn events into promises.
 pnpm add @glandjs/events
 ```
 
+<Aside type="note" title="This page is a map">
+  The exhaustive reference is generated from the repository on every build:
+  [API reference](/reference/events/api) and
+  [Quick start](/reference/events/quick-start). The changelog for 2.0 is at
+  [changelog](/changelog/events).
+</Aside>
+
 ## Creating a broker
 
 ```ts
-import { EventBroker, type EventRecord } from '@glandjs/events'
+import { EventBroker } from '@glandjs/events'
 
 const broker = new EventBroker<Events>({ name: 'orders' })
 ```
@@ -33,14 +39,17 @@ interface BrokerOptions {
   delimiter?: string
   /** Listener resolution cache size. @default 6 */
   cacheSize?: number
-  /** Default timeout for async operations, in ms. @default 1000 */
+  /** Default timeout for watchers, in ms. @default 1000 */
   defaultTimeout?: number
-  /** Maximum listeners per event. @default 5 */
+  /** Maximum listeners per exact event name. @default 5 */
   maxListeners?: number
-  /** Do not throw when an `error` event has no listener. @default false */
+  /** Swallow a failure raised while routing to a connected peer. @default false */
   ignoreErrors?: boolean
 }
 ```
+
+`broker.options` is always fully populated: every default is resolved at construction,
+so a test can assert the whole object.
 
 ```ts
 const broker = new EventBroker({
@@ -51,22 +60,47 @@ const broker = new EventBroker({
 })
 ```
 
+<Aside type="caution" title="ignoreErrors does not do what its name suggests">
+  It does **not** guard `error` events — there is no special `error` event in this
+  package. It only decides whether an exception thrown while forwarding to a connected
+  peer is rethrown. A throwing **local** listener always propagates out of `emit`,
+  regardless of this flag, because local listeners run before any peer is contacted.
+</Aside>
+
 ## The typed event map
 
 Every broker, channel and context is generic over one map of event names to payload
 types.
 
 ```ts
-import { IOEvent } from '@glandjs/events'
+import type { IOEvent } from '@glandjs/events'
 
-interface Events extends EventRecord {
+// ✓ a type alias: names and payloads are both enforced
+type Events = {
   'order:placed': { orderId: string; total: number }
-  'order:paid': IOEvent<{ orderId: string }, Promise<boolean>>
+  'order:paid': IOEvent<{ orderId: string }, boolean>
+}
+
+// ✓ a plain interface also works — it has no index signature
+interface Events {
+  'order:placed': { orderId: string; total: number }
 }
 ```
 
-`IOEvent<Payload, Return>` declares both sides of a request/response event. A plain
-type is a payload with a `void` return.
+`IOEvent<Payload, Return>` declares both sides of a request/response event. A plain type
+is a payload with a `void` return.
+
+<Aside type="caution" title="Never extend EventRecord">
+  ```ts
+  // ✗ this is a trap: every event name becomes legal and every payload becomes `any`
+  interface Events extends EventRecord {
+    'order:placed': { orderId: string }
+  }
+  ```
+  `EventRecord` is `Record<string, any>`. Extending it installs an index signature, so
+  the generics stop constraining anything and a typo in an event name compiles.
+  Declare a plain `type` or a plain `interface` and you get real checking.
+</Aside>
 
 ## Subscribing
 
@@ -77,7 +111,7 @@ broker.on('order:placed', (payload) => {
   console.log(payload.orderId)
 })
 
-// Chained — every method returns the broker
+// chained — most methods return the broker
 broker
   .on('order:placed', audit)
   .on('order:paid', charge)
@@ -93,9 +127,11 @@ const order = await broker.on('order:placed', null, {
 })
 ```
 
-### `once(event, listener)`
+### `once(event, listener, options?)`
 
-Fires a single time, then unsubscribes.
+Fires a single time, then unsubscribes — it detaches **before** invoking, so a re-entrant
+`emit` from inside the listener cannot run it twice. It also accepts the same
+`{ watch: true }` form as `on`.
 
 ```ts
 broker.once('server:ready', () => startWorkers())
@@ -110,11 +146,13 @@ broker.off('order:placed')          // every listener for that exact name
 
 ### `getListener(event)`
 
-Returns the listeners registered for an exact event name.
+Returns a **copy** of the listeners registered for an exact event name, so mutating the
+result cannot corrupt the registry.
 
 <Aside type="caution">
-  `getListener` performs a literal lookup only. Listeners registered through a
-  wildcard pattern are not returned, so `call()` will not invoke them.
+  `getListener` performs a literal lookup. Listeners registered through a wildcard
+  pattern are not returned, so `call()` will not invoke them — that is deliberate, and it
+  is what makes `call` deterministic.
 </Aside>
 
 ## Emitting
@@ -127,36 +165,47 @@ Synchronous dispatch, in registration order, returning the broker.
 broker.emit('order:placed', { orderId: 'o-1', total: 42 })
 ```
 
-Dispatch is synchronous by design. A listener may be `async`, but the emit call does
-not wait for it — if you need the result, use `call()`.
+A listener may be `async`, but `emit` does not wait for it. If you need the result, use
+`call()`.
 
 ### `call(event, data)` / `call(event, data, 'all')`
 
-Invokes listeners and returns their result.
+Request/response without a wire.
 
 ```ts
-const ok = await broker.call('order:paid', { orderId: 'o-1' })
-//    ^? Promise<boolean> — straight from IOEvent
+const ok = broker.call('order:paid', { orderId: 'o-1' })
+//    ^? boolean — straight from IOEvent
 
-const results = await broker.call('order:paid', { orderId: 'o-1' }, 'all')
-//    ^? Promise<boolean>[]
+const results = broker.call('order:paid', { orderId: 'o-1' }, 'all')
+//    ^? boolean[]
 ```
 
-Without a strategy, the first registered listener's result is returned. With `'all'`,
-every result is collected in registration order.
+`'all'` is the only strategy. Without it you get the first listener's result; with it you
+get every result in registration order. There is no `'first'`, `'last'`, `'every'`,
+`'some'` or `'race'`.
+
+<Aside type="caution" title="An empty result is an empty array">
+  When nothing is listening, **both** forms return `[]`, even though the single-result
+  overload is typed as a scalar. Validate the shape rather than assuming it:
+  ```ts
+  const results = broker.call('order:paid', data, 'all')
+  const ok = results.length > 0 && results.every(Boolean)
+  ```
+</Aside>
 
 ## Waiting for events
 
 ### `watch(event, timeoutMs?)`
 
-Turns an event into a promise.
+Turns an event into a one-shot promise.
 
 ```ts
-const order = await broker.watch('order:placed')
+const order = await broker.watch('order:placed', 5_000)
 ```
 
-Rejects after `timeoutMs` (defaulting to `defaultTimeout`) with a message naming the
-event. Supply `defaultValue` through `on`/`once` options to receive it instead.
+Rejects after `timeoutMs` (defaulting to `defaultTimeout`) with
+`Event 'order:placed' timed out after 5000ms`. `watch()` always rejects on timeout; only
+the `on`/`once` watch form accepts `defaultValue`.
 
 ```ts
 const order = await broker.on('order:placed', null, {
@@ -166,29 +215,43 @@ const order = await broker.on('order:placed', null, {
 })
 ```
 
+`defaultValue` is honoured for any non-`undefined` value, so `0`, `''`, `false` and
+`null` all work.
+
 ## Channels
 
-`channel(name)` returns a live channel object scoped to a namespace. Instances are
-cached per name, so calling it twice returns the same object.
+`channel(name)` returns a live channel scoped to a namespace. Instances are cached per
+name, so calling it twice returns the same object, and nested channels are cached on the
+broker under their joined name.
 
 ```ts
 const orders = broker.channel('order')
 
 orders.on('placed', (payload) => {})   // -> 'order:placed'
 orders.emit('placed', { orderId: 'o-1' })
-await orders.call('paid', { orderId: 'o-1' })
+orders.call('paid', { orderId: 'o-1' })
+orders.watch('placed')                 // namespaced too
 
-const refunds = orders.channel('refund')   // nested -> 'order:refund:*'
+const refunds = orders.channel('refund')   // -> 'order:refund:*'
 ```
 
 | Member | Type |
 | --- | --- |
 | `id` | `string` — the owning broker's id |
-| `name` | `string` — the channel name |
-| `on` / `once` / `off` / `emit` / `call` / `getListener` | as on the broker, namespaced |
-| `watch` | `Promise`, namespaced |
-| `broadcast` | send to the whole mesh |
+| `name` | `string` — the fully joined channel name |
+| `on` / `once` / `off` / `emit` / `call` / `getListener` / `watch` | as on the broker, namespaced |
 | `channel(name)` | a nested channel |
+| `broadcast` | send to the whole mesh |
+
+A channel owns no bus of its own: every method rewrites the name and delegates.
+`broker.channel('order').emit('placed', p)` and `broker.emit('order:placed', p)` are the
+same call.
+
+<Aside type="caution" title="channel() takes a prefix, not a segment">
+  The name is matched against event names by **string prefix**, not by segment. A channel
+  called `'user'` therefore also claims `'username:verify'`. If that matters, choose
+  boundaries accordingly — or subscribe on the broker, where the tree does the matching.
+</Aside>
 
 ## Mesh networking
 
@@ -208,39 +271,62 @@ b.emit('event:name', { ok: true })
 | Method | Signature | Description |
 | --- | --- | --- |
 | `connectTo` | `(broker, options?) => this` | Connect bidirectionally. |
-| `disconnect` | `(brokerId) => boolean` | Drop one connection. |
+| `disconnect` | `(brokerId) => boolean` | Drop one connection, both directions. |
 | `disconnectAll` | `() => this` | Drop every connection. |
 | `isConnected` | `(brokerId) => boolean` | Test a connection. |
-| `getConnections` | `() => BrokerId[]` | Connected broker ids. |
+| `getConnections` | `() => BrokerId[]` | Connected broker ids, in insertion order. |
 | `getConnection` | `(brokerId) => EventBroker \| undefined` | The connected broker. |
-| `createConnections` | `(brokers[], options?) => this` | Full mesh, including peer-to-peer. |
+| `createConnections` | `(brokers[], options?) => this` | Full mesh, peer to peer. |
 | `findBroker` | `(brokerId, maxDepth = 3) => EventBroker \| undefined` | Multi-hop lookup. |
 | `broadcast` | `(event, payload, options?) => this` | Emit to the whole mesh. |
 | `broadcastTo` | `(brokerIds, event, payload, options?) => this` | Emit to a subset. |
 | `emitTo` | `(brokerId, event, payload, options?) => boolean` | Emit to one peer. |
-| `send` | `(event, target, options?) => this` | Emit to one peer object. |
+| `send` | `(event, target, payload, options?) => this` | Emit to one peer object. |
 | `callTo` | `(brokerId, event, data) => EventReturn` | Request/response across the mesh. |
 
-`ConnectionOptions` restricts what is forwarded:
+### `send` needs no connection
 
 ```ts
-interface ConnectionOptions {
-  events?: string[]   // only forward these
-}
-
-a.connectTo(b, { events: ['order:*'] })
+a.send('order:placed', b, { orderId: 'o-1' })
 ```
 
-<Aside type="note" title="Loop safety">
-  Each propagated event carries a trace of the brokers that have already seen it, so
-  a fully connected mesh terminates instead of bouncing forever. The trace also means
-  a broker never handles the same propagated event twice.
+`send` targets a broker **instance**, works whether or not the two are connected, and is
+not relayed onward. `emitTo` is the id-addressed variant and does require a connection —
+it returns `false` when the peer is unknown.
+
+<Aside type="caution" title="send takes the payload as its third argument">
+  `send(event, target, payload, options?)`. In 1.x the payload was missing from both the
+  signature and the forwarding call, so the target always received a literal `null`. It
+  is a required argument in 2.0.
 </Aside>
 
+### Restricting what is forwarded
+
+```ts
+a.connectTo(b, { events: ['order:placed', 'order:paid'] })
+```
+
+<Aside type="caution" title="Forwarding names are exact">
+  `ConnectionOptions.events` is matched **literally**. `'order:*'` does not forward the
+  whole namespace — it forwards an event actually named `order:*`. Wildcards work inside
+  a broker, not on a connection.
+</Aside>
+
+### Loop safety
+
+Every propagate carries a correlation id, and each broker remembers the ids it has
+already processed, so a fully connected mesh terminates and a broker never handles the
+same event twice. The trace is bounded (the 4096 most recent ids) with FIFO eviction.
+
+`EventTrace.visited` is bookkeeping **inside** a broker; only the id travels on the
+wire. Two brokers can therefore each process the same id once — which is exactly the
+guarantee you want.
+
 <Aside type="caution" title="No delivery guarantees">
-  Mesh propagation is best-effort. A disconnected peer, a process crash or a
-  partition loses the event. This is deliberate — persistence and exactly-once
-  delivery belong in a system that can actually guarantee them.
+  Mesh propagation is best-effort. A disconnected peer, a process crash or a partition
+  loses the event; there is no acknowledgement, retry or dead-lettering. This is
+  deliberate — persistence and exactly-once delivery belong in a system that can
+  actually guarantee them.
 </Aside>
 
 ## Shutdown
@@ -249,18 +335,26 @@ a.connectTo(b, { events: ['order:*'] })
 broker.shutdown()
 ```
 
-Clears pending watchers, drops every connection and releases cached channels.
+Rejects pending watchers, tells peers, drops every connection, releases cached channels
+and clears the processed-id trace. It is idempotent and safe on a broker that never
+started, and the instance stays usable afterwards.
+
+```ts
+await http.close()
+broker.shutdown()   // the Gland core's own bus
+```
 
 ## Full reference
 
 ```ts
 class EventBroker<TEvents extends EventRecord> implements Broker<TEvents> {
   constructor(options: BrokerOptions)
-  get id(): string
+  get id(): BrokerId
+  readonly options: BrokerOptions
 
   on(event, listener, options?): this
   on(event, null, { watch: true, timeout?, defaultValue? }): Promise<Payload>
-  once(event, listener): this
+  once(event, listener, options?): this
   off(event, listener?): this
   emit(event, payload, options?): this
   getListener(event): Listener[]
@@ -272,7 +366,7 @@ class EventBroker<TEvents extends EventRecord> implements Broker<TEvents> {
 
   broadcast(event, payload, options?): this
   broadcastTo(brokerIds, event, payload, options?): this
-  send(event, target, options?): this
+  send(event, target, payload, options?): this
   emitTo(brokerId, event, payload, options?): boolean
   callTo(brokerId, event, data): EventReturn
   callTo(brokerId, event, data, 'all'): EventReturn[]
@@ -290,18 +384,40 @@ class EventBroker<TEvents extends EventRecord> implements Broker<TEvents> {
 }
 ```
 
+Two lower-level pieces are exported as well, and both are usable on their own:
+
+| Symbol | Description |
+| --- | --- |
+| `EventEmitter<TEvents>` | The engine: `on`, `once`, `off`, `emit`, `getListener`, `watch`, `shutdown`. Its `emit` returns `void`, not `this`. |
+| `EventWatcher<TEvents>` | The promise layer: `watch`, `onEmit`, `pending`, `shutdown`. |
+
+## Options
+
+```ts
+interface EventOptions { watch?: boolean; timeout?: number; defaultValue?: any }
+
+interface EmitOptions extends EventOptions {
+  _eventId?: string      // correlation id
+  _sourceId?: BrokerId   // originating broker
+  _propagate?: boolean   // keep forwarding to peers, which forward onward
+}
+```
+
+`broadcast()` sets all three for you. Setting `_eventId` yourself is how you replay the
+same event on purpose; setting one that the broker has already processed is a no-op.
+
 ## Design characteristics
 
-**Synchronous dispatch.** Listeners run immediately, in registration order, which
-makes event flows straightforward to reason about and to log.
+**Synchronous dispatch.** Listeners run immediately, in registration order, which makes
+event flows straightforward to reason about and to log.
 
-**No persistence.** Events flow and are gone. If no listener is registered, the emit
-is a no-op.
+**No persistence.** Events flow and are gone. If no listener is registered, the emit is
+a no-op.
 
 **No guaranteed delivery.** There is no acknowledgement, retry or dead-lettering.
 
-**No built-in serialisation.** The event map is compile-time only; nothing is
-encoded. To move events between processes, put a channel behind a real transport.
+**No built-in serialisation.** The event map is compile-time only; nothing is encoded. To
+move events between processes, put a channel behind a real transport.
 
 These are design choices, not gaps. If you need durability, do the work in a channel
 that writes to a database or a queue.
@@ -311,7 +427,16 @@ that writes to a database or a queue.
 | Condition | Behaviour |
 | --- | --- |
 | `on` with a `null` listener and no `watch: true` | throws `Listener cannot be null unless 'watch: true' is explicitly set in options.` |
-| More than `maxListeners` listeners on one event | throws `Maximum listeners (5) exceeded for event 'order:placed'` |
+| More than `maxListeners` on one exact event name | throws `Maximum listeners (5) exceeded for event 'order:placed'` |
 | `watch` timeout | rejects with `Event 'order:placed' timed out after 1000ms` |
 | `shutdown` with watchers pending | rejects with `Watcher shutdown before '…' was emitted` |
-| `emit('error')` with no listener | throws, unless `ignoreErrors: true` |
+| `connectTo(self)` | throws `Cannot connect broker "orders" to itself` |
+| `connectTo(null)` | throws `Invalid broker` |
+| A local listener throws | propagates out of `emit`; the remaining listeners for that event are skipped |
+| A peer throws while being routed to | rethrown, unless `ignoreErrors: true` |
+
+## See also
+
+- [API reference](/reference/events/api) — generated from the repository
+- [`@glandjs/emitter`](/packages/emitter) — the primitive underneath
+- [Changelog](/changelog/events)
