@@ -9,12 +9,12 @@ const pillars = [
     body: 'Controllers never call business logic directly. They emit a domain event, and channels decide what happens. Side effects become observable, replaceable and testable.',
   },
   {
-    title: 'Protocol-agnostic',
-    body: 'Transport lives in brokers. The same controllers and channels run over HTTP today, and over WebSocket or RPC tomorrow — only the adapter wiring changes.',
+    title: 'One core, five transports',
+    body: 'The HTTP layer contains no server, no router and no framework import. Express, Fastify, Koa, Hono and node:http each implement the same contract, and the same controller runs unchanged on all five.',
   },
   {
     title: 'Tiny primitives',
-    body: 'The emitter is three methods and under 2 KB. The broker adds channels and meshes on top of it. Nothing is hidden from you, and there is nothing to unlearn.',
+    body: 'The emitter is three methods and a couple of kilobytes. The broker adds channels, meshes and watchers on top of it. Nothing is hidden from you, and there is nothing to unlearn.',
   },
   {
     title: 'TypeScript-first',
@@ -25,8 +25,8 @@ const pillars = [
     body: 'A controller test asserts the events it emitted. A channel test calls a handler with a fake context. Because side effects are concentrated in channels, test suites stay small.',
   },
   {
-    title: 'Gradually adoptable',
-    body: 'Install only the packages you need. Keep your existing HTTP layer and mount Gland channels next to it. There is no big-bang migration.',
+    title: 'Extensible seam',
+    body: 'Adding a transport means implementing one abstract adapter and its context. Because a broker is just a class, WebSocket or RPC is the same exercise — and there is no big-bang migration.',
   },
 ]
 ---

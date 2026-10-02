@@ -19,6 +19,8 @@ import { Card, CardGrid, LinkCard } from '@astrojs/starlight/components'
 import Pillars from '@components/Pillars.astro'
 import PackageGrid from '@components/PackageGrid.astro'
 
+import { versions } from '../../../data/sync.generated.mjs'
+
 ## Why Gland?
 
 Gland separates *what* your application does from *how* it is transported. A controller
@@ -72,17 +74,58 @@ Gland is a set of small, independently installable packages. Adopt only what you
 
 <PackageGrid />
 
-## Recent releases
+## From the repositories
+
+The long documentation is not written here. Every API reference, the HTTP guides, the
+adapter matrix and the changelogs are published from the Gland repositories themselves
+on every build, so they cannot disagree with the code.
 
 <CardGrid>
-  <Card title="@glandjs/emitter 1.1.4">
-    Tree-based storage, a hot-path LRU cache, and a CommonJS build for broader
-    tooling support.
+  <LinkCard
+    title="How the sync works"
+    href="/reference"
+    description="Which repository feeds which page, where the text comes from, and how to publish a new document."
+  />
+  <LinkCard
+    title="HTTP guides"
+    href="/reference/http/guides/getting-started"
+    description="Getting started, the context, middleware, replies, errors and CORS — one core, five transports."
+  />
+  <LinkCard
+    title="Adapter matrix"
+    href="/reference/http/adapter-matrix"
+    description="What each of Express, Fastify, Koa, Hono and node:http can and cannot do."
+  />
+  <LinkCard
+    title="Writing an adapter"
+    href="/reference/http/architecture/writing-an-adapter"
+    description="Build a sixth transport from the contract."
+  />
+</CardGrid>
+
+## Recent releases
+
+Versions below are read from each repository's `package.json` when this page was built,
+not typed by hand.
+
+<CardGrid>
+  <Card title={`@glandjs/emitter ${versions['@glandjs/emitter'] ?? ''}`}>
+    Tree-based storage, a hot-path LRU cache, and a CommonJS build for broader tooling
+    support.
     [Read the changelog](/changelog/emitter)
   </Card>
-  <Card title="@glandjs/events 1.1.2">
-    Mesh management: `getConnections`, `disconnectAll`, `callTo`, `broadcastTo` and
-    `findBroker`.
+  <Card title={`@glandjs/events ${versions['@glandjs/events'] ?? ''}`}>
+    `send()` carries a payload, a channel's `watch()` settles, and the call strategies
+    are `'all'` or nothing.
     [Read the changelog](/changelog/events)
+  </Card>
+  <Card title={`@glandjs/http ${versions['@glandjs/http'] ?? ''}`}>
+    One framework-agnostic core and a pluggable adapter per server, so the same
+    controller runs on Express, Fastify, Koa, Hono and `node:http`.
+    [Read the changelog](/changelog/http)
+  </Card>
+  <Card title={`@glandjs/core ${versions['@glandjs/core'] ?? ''}`}>
+    The DI container, module bootstrap, lifecycle hooks and the `Context` base class.
+    [Read the changelog](/changelog/core)
   </Card>
 </CardGrid>
