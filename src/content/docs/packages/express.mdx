@@ -1,243 +1,139 @@
 ---
 title: '@glandjs/express'
-badge: '@glandjs/express@1.0.0-beta'
-description: The Express 5 adapter — ExpressBroker, ExpressContext, middleware with a Gland context, and the full application surface.
+badge: '@glandjs/express@1.1.0-beta'
+description: The Express 5 transport — ExpressBroker, ExpressContext, framework middleware through useRaw, and the one behavioural caveat.
 ---
 
 import { Aside } from '@astrojs/starlight/components'
 
-
-`@glandjs/express` is the reference adapter for Gland. It binds your controllers and
-channels to a real [Express 5](https://expressjs.com) application and gives you back
-the live app object.
+`@glandjs/express` binds your controllers and channels to a real
+[Express 5](https://expressjs.com) application. It is the adapter most people start
+with, and the reference for how the contract maps onto a framework that is not built
+for promises.
 
 ```bash
-pnpm add @glandjs/express express
+pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express express reflect-metadata
 ```
 
-## Why this adapter exists
+<Aside type="note" title="This page is a summary">
+  The generated reference is [mirrored from the repository](/reference/http/adapters/express)
+  on every build, so the table below never disagrees with the source.
+</Aside>
 
-> Express is not your application — it's just one way to deliver HTTP. Gland abstracts
-> that detail.
-
-This package is a bridge between the Express HTTP server and Gland's internal
-architecture. It listens for requests via Express and transforms them into internal
-Gland events. Likewise, responses generated inside the Gland runtime are mapped back
-into Express's response format.
-
-Express's API and ecosystem are fully supported — but once a request enters the Gland
-system it is treated like any other event in the broker-based system. Your business
-logic is not tied to Express, and can be reused with a different protocol or server
-without rewriting the core.
-
-**With `@glandjs/express`, HTTP is just another communication channel.** All events are
-routed through Gland's centralised broker, which is what keeps the whole system
-protocol-agnostic.
-
-
-## Attaching the adapter
+## Attaching it
 
 ```ts
 import { GlandFactory } from '@glandjs/core'
-import { ExpressBroker } from '@glandjs/express'
-import type { EventTypes } from './shared/events.interface'
+import { Controller, Module } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+import { ExpressBroker, type ExpressContext } from '@glandjs/express'
 
-const app = await GlandFactory.create(AppModule)
+@Controller('/products')
+export class ProductController {
+  @Get('/:id')
+  async find(ctx: ExpressContext) {
+    return { product: await ctx.call('db:product:find', { id: ctx.params.id }) }
+  }
+}
 
-const server = app.connectTo(ExpressBroker<EventTypes>)
-server.json()
-server.urlencoded({ extended: true })
-server.listen(3000, { host: '0.0.0.0', message: 'API ready on :3000' })
+@Module({ controllers: [ProductController] })
+export class AppModule {}
+
+const { app, shutdown } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker, { poweredBy: false })
+
+http.bodyParser({ json: true, urlencoded: { extended: true } })
+http.listen(3000)
+await http.ready()
 ```
-
-Passing the event map as a type argument is what makes `ctx.call(...)` resolve to a
-real type inside your controllers.
 
 ## Exports
-
-```ts
-export * from './broker'
-export * from './context'
-```
 
 | Symbol | Description |
 | --- | --- |
 | `ExpressBroker<TEvents>` | The broker you pass to `connectTo()`. |
-| `ExpressContext<TEvents>` | The context type your handlers receive. |
+| `ExpressContext<TEvents>` | The context your handlers receive. |
+| `ExpressCore<TEvents>` | The application object `connectTo()` returns. |
+| `ExpressAdapter<TEvents>` | The transport implementation of `HttpServerAdapter`. |
 
-`ExpressCore` and `ExpressAdapter` are internal; you get the core instance's type
-inferred from `connectTo()`.
-
-## `ExpressBroker`
-
-```ts
-class ExpressBroker<TEvents extends EventRecord> extends HttpBroker<
-  TEvents, ExpressCore<TEvents>, HttpApplicationOptions
-> {
-  constructor(options?: HttpApplicationOptions)
-  initialize(): ExpressCore<TEvents>
-}
-```
-
-Inherits `broker` and `instance` from `BrokerAdapter`, and `initialize()` from
-`HttpBroker`, which subscribes to `gland:define:route` and registers each discovered
-route on the Express app.
-
-```ts
-// TLS
-const server = app.connectTo(ExpressBroker, {
-  https: { key: readFileSync('key.pem'), cert: readFileSync('cert.pem') },
-})
-```
-
-## `ExpressContext`
-
-```ts
-class ExpressContext<TEvents extends EventRecord> extends HttpContext<
-  Request, Response, TEvents
-> {
-  constructor(events: HttpEventCore<TEvents>, req: Request, res: Response)
-}
-```
-
-A complete implementation of every `HttpContext` member, delegating to the underlying
-Express `req` / `res`. `params` and `host` are populated at construction.
-
-```ts
-import type { ExpressContext } from '@glandjs/express'
-
-@Controller('products')
-export class ProductController {
-  @Get(':id')
-  async getOne(ctx: ExpressContext<EventTypes>) {
-    const { id } = ctx.params
-    const product = await ctx.call('db:product:find', { id })
-    return ctx.send({ product })
-  }
-}
-```
+Route decorators are **not** exported from here — they come from `@glandjs/http`, so a
+controller never depends on the transport.
 
 ## The application surface
 
-`connectTo()` returns an `ExpressCore<TEvents>` — the full
-[`HttpCore`](/packages/http#httpcore) surface, backed by a real Express app.
+`connectTo()` returns the full [`HttpCore`](/packages/http#httpcore) surface, backed by
+a real Express application. Reach the raw app through `http.instance` when you need
+something Express-specific.
 
 ```ts
-server.json()
-server.urlencoded({ extended: true })
-server.useStaticAssets('public')
-server.setGlobalPrefix('/api')
-server.enableCors({ origin: 'https://example.com', credentials: true })
-server.setViewEngine('ejs')
-server.setBaseViewsDir('views')
-
-server.listen(3000, { host: '0.0.0.0', message: 'ready' })
-```
-
-### Routes outside a controller
-
-Every verb `HttpCore` exposes is available directly, which is handy for health checks
-or a legacy route mounted next to Gland's.
-
-```ts
-server.get('/ping', (ctx) => ctx.send('pong'))
-server.post('/webhooks/stripe', (ctx) => ctx.send({ received: true }))
-```
-
-## Middleware
-
-Gland-style middleware takes the context instead of `(req, res, next)`. The adapter
-detects this by arity and rewrites the function for you, so a two- or three-argument
-middleware is treated as a Gland handler.
-
-```ts
-// 2 args -> Gland middleware
-server.use(async (ctx, next) => {
+http.use(async (ctx, next) => {
   const started = Date.now()
-  ctx.state.requestId = crypto.randomUUID()
-
   await next()
-
-  console.log(`${ctx.method} ${ctx.originalUrl} ${Date.now() - started}ms`)
+  console.log(`${ctx.method} ${ctx.path} ${Date.now() - started}ms`)
 })
 
-// 3 args -> also treated as Gland middleware
-server.use(async (ctx, next) => {
-  const auth = ctx.getHeader('authorization')
-  if (!auth) return ctx.send({ error: 'Unauthorized' }, 401)
-  ctx.state.user = await verify(auth)
-  return next()
-})
+http.useRaw(compression())                 // framework middleware, unmolested
+http.useStaticAssets('public')
+http.setGlobalPrefix('/api')
+http.enableCors({ origin: 'https://example.com', credentials: true })
+
+http.listen(3000, { host: '0.0.0.0' })
 ```
 
-<Aside type="caution" title="Signature matters">
-  The context is attached to the request by a middleware the adapter installs during
-  `listen()`. Middleware registered with `use()` before that point still works, but
-  a handler invoked outside the pipeline throws
-  `No context found in middleware`. Keep `use()` calls before `listen()`, and always
-  write `(ctx, next)` for Gland middleware.
+Routes outside a controller work too, which is handy for a health check:
+
+```ts
+http.get('/ping', (ctx) => ctx.send('pong'))
+```
+
+## The one caveat: `next()` is a hand-off
+
+Express's `next()` does not return a promise, so `await next()` resolves as soon as
+Express moves on — a downstream `throw` never reaches an upstream `catch`. Every other
+adapter gives you a real onion.
+
+| | `await next()` waits | upstream `catch` sees a downstream throw |
+| --- | --- | --- |
+| `@glandjs/express` | **no** | **no** |
+| `@glandjs/fastify` | yes | yes |
+| `@glandjs/koa` | yes | yes |
+| `@glandjs/hono` | yes | yes |
+| `@glandjs/node` | yes | yes |
+
+Three ways to live with it: do the work after the response rather than after `next()`,
+move the recovery downstream into the error handler, or measure on
+`HttpEvent.RequestEnd`. [Middleware](/reference/http/guides/middleware#the-express-caveat)
+covers all three.
+
+## What Express does better
+
+Express is the most complete of the five out of the box, which is why it is often the
+right first choice:
+
+- `useRaw()` works, so `compression()`, `helmet()`, `cookie-parser()` and friends mount
+  normally.
+- Signed cookies work when `cookie-parser` is mounted.
+- Views are built in: `setViewEngine()` and `setBaseViewsDir()` are real.
+- Static file serving is built in.
+- Every extended verb works, including `MKWORKSPACE` and `UPDATE`.
+
+## What it cannot do
+
+- **Multipart.** `bodyParser({ multipart })` throws at configuration time. Use `multer`
+  through `useRaw()`, or pick another adapter.
+- **`poweredBy: false`** removes `X-Powered-By`, which Express sets itself; Koa has no
+  header to remove and ignores the option.
+- **A single catch-all route.** `http.all('*')` works, but Express's own `app.use` order
+  still decides what a request sees first.
+
+<Aside type="tip">
+  The same application on every transport is `examples/<adapter>/hello-world.ts` in the
+  repository: the controller, the channel, the module and the middleware are
+  byte-for-byte identical and only the import and `connectTo()` change.
 </Aside>
 
-## Reply resolution
+## See also
 
-A handler can return the context or a plain value.
-
-```ts
-// Explicit
-@Get()
-list(ctx) {
-  return ctx.send({ products: [] })
-}
-
-// Implicit — the adapter replies with whatever came back
-@Get()
-list(ctx) {
-  return { products: [] }
-}
-```
-
-If nothing was sent by the time the handler returns, the adapter writes the value as
-the response body. Streams — anything with a `getStream()` method — are piped instead
-of serialised.
-
-## Error handling
-
-```ts
-import { HttpStatus } from '@medishn/toolkit'
-
-@Get(':id')
-async getOne(ctx) {
-  const product = await ctx.call('db:product:find', { id: ctx.params.id })
-  if (!product) return ctx.throw(HttpStatus.NOT_FOUND, { message: 'Not found' })
-  return ctx.send({ product })
-}
-```
-
-Transport-level failures are emitted as a `server:crashed` event rather than thrown,
-so you can log them in one place:
-
-```ts
-server.broker.on('server:crashed', ({ message, error }) => {
-  logger.error({ message, error }, 'http')
-})
-```
-
-## Shutting down
-
-```ts
-await server.close()
-```
-
-The adapter closes the underlying Node server. The `onAppShutdown` and
-`onModuleDestroy` hooks already handle `SIGTERM` and `SIGINT` — see
-[Lifecycle events](/fundamentals/lifecycle-events).
-
-## Notes and caveats
-
-<Aside type="caution" title="Known gaps in 1.0.0-beta">
-  - `ctx.sse()` is a no-op. Server-sent events are not implemented yet.
-  - `enableCors()` requires you to install `cors` yourself.
-  - `setGlobalPrefix()` mounts a router at the prefix; it does not retroactively
-    re-register routes that were already bound.
-  - `@Get(['/a', '/b'])` does not work — pass a single string.
-</Aside>
+- [Mirrored adapter documentation](/reference/http/adapters/express)
+- [Adapter matrix](/reference/http/adapter-matrix)
+- [`@glandjs/http`](/packages/http) — the layer this adapter implements

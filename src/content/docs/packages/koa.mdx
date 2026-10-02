@@ -1,0 +1,112 @@
+---
+title: '@glandjs/koa'
+badge: '@glandjs/koa@1.1.0-beta'
+description: The Koa 3 transport — a native router, native extended verbs and a real promise onion with no caveats about next().
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+`@glandjs/koa` binds your controllers and channels to a [Koa 3](https://koajs.com)
+application. It is the adapter with the least to explain: Koa's model is the model this
+layer already uses.
+
+```bash
+pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/koa koa @koa/router reflect-metadata
+```
+
+<Aside type="note" title="This page is a summary">
+  The full documentation is [mirrored from the repository](/reference/http/adapters/koa)
+  on every build.
+</Aside>
+
+## Attaching it
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { Controller, Module } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+import { KoaBroker, type KoaContext } from '@glandjs/koa'
+
+@Controller('/products')
+export class ProductController {
+  @Get('/:id')
+  async find(ctx: KoaContext) {
+    return { product: await ctx.call('db:product:find', { id: ctx.params.id }) }
+  }
+}
+
+@Module({ controllers: [ProductController] })
+export class AppModule {}
+
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(KoaBroker, { poweredBy: false })
+
+http.bodyParser({ limit: 1_000_000 })
+http.listen(3000)
+```
+
+## Exports
+
+| Symbol | Description |
+| --- | --- |
+| `KoaBroker<TEvents>` | The broker you pass to `connectTo()`. |
+| `KoaContext<TEvents>` | The context your handlers receive. |
+| `KoaCore<TEvents>` | The application object, plus `http.koa`. |
+| `KoaAdapter<TEvents>` | The transport implementation. |
+
+## The real onion
+
+Koa *is* an onion, so `await next()` genuinely suspends until everything downstream has
+run, and a downstream `throw` reaches an upstream `catch`. This is the behaviour the
+other four adapters work to reproduce.
+
+```ts
+http.use(async (ctx, next) => {
+  const started = Date.now()
+  await next()
+  console.log(`${ctx.method} ${ctx.path} ${Date.now() - started}ms`)
+})
+```
+
+`http.koa` is the raw instance. The adapter mounts `@koa/router` itself — Koa ships no
+router — and carries no prefix on it, because the base class has already applied
+`setGlobalPrefix`.
+
+## Everything is native
+
+`@koa/router` accepts any method string, so every extended and WebDAV verb routes
+natively — including `MKWORKSPACE` and `UPDATE`, which Fastify cannot do.
+
+| Feature | Needs | Install |
+| --- | --- | --- |
+| Body parsing | `koa-bodyparser` | `pnpm add koa-bodyparser` |
+| Static files | `koa-static` | `pnpm add koa-static` |
+| Multipart | `@koa/multer` | `pnpm add @koa/multer` |
+| Views | `@koa/views` | `pnpm add @koa/views` |
+| Signed cookies | a signed-cookie middleware + `http.koa.keys` | — |
+
+<Aside type="caution" title="Koa's body is undefined until you say otherwise">
+  Koa ships `ctx.request.body` as always `undefined`. Declaring `bodyParser()` installs
+  `koa-bodyparser`, which is what fills `ctx.body`. The adapter's `limit` defaults to
+  **100 kB**, deliberately smaller than `koa-bodyparser`'s own 1 MB.
+</Aside>
+
+## What it cannot do
+
+- **Multipart.** `enableTypes` is `['json', 'form', 'text']`; mount `@koa/multer`
+  through `useRaw()`.
+- **`poweredBy: false`** is a no-op: Koa sets no `X-Powered-By` of its own.
+- **`signedCookies`** is `{}` unless a signed-cookie middleware is mounted.
+- **`sendFile` byte ranges** are unsupported; `maxAge` and `lastModified: false` work.
+
+<Aside type="tip" title="`ctx.end()` sets 204">
+  Koa would infer `204` from a `null` body anyway, so `end()` sets it explicitly. This is
+  the one place where a transport makes a choice the contract left open, and it does so
+  consistently across all five.
+</Aside>
+
+## See also
+
+- [Mirrored adapter documentation](/reference/http/adapters/koa)
+- [Adapter matrix](/reference/http/adapter-matrix)
+- [`@glandjs/http`](/packages/http)

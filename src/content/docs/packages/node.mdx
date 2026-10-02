@@ -1,0 +1,142 @@
+---
+title: '@glandjs/node'
+badge: '@glandjs/node@1.1.0-beta'
+description: The node:http transport — the reference implementation of the adapter contract, with no framework and no dependencies.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+`@glandjs/node` binds your controllers and channels to `node:http`. It is the
+**reference implementation** of the adapter contract: path normalisation, reply
+coercion, cookie serialisation and the decision of when to end a socket are all defined
+here, and the other four adapters are measured against it.
+
+```bash
+pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/node reflect-metadata
+```
+
+No HTTP server dependency. `node:http` is in the runtime.
+
+<Aside type="note" title="This page is a summary">
+  The full documentation is [mirrored from the repository](/reference/http/adapters/node)
+  on every build.
+</Aside>
+
+## Attaching it
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { Controller, Module } from '@glandjs/common'
+import { Get, Post } from '@glandjs/http'
+import { NodeBroker, type NodeContext } from '@glandjs/node'
+import { HttpStatus } from '@medishn/toolkit'
+
+@Controller('/')
+export class HelloController {
+  @Get('/')
+  index() {
+    return { framework: 'node:http' }
+  }
+
+  @Get('/hello/:name')
+  hello(ctx: NodeContext) {
+    return { message: `Hello, ${ctx.params.name}!` }
+  }
+
+  @Post('/echo')
+  echo(ctx: NodeContext) {
+    return ctx.body
+  }
+
+  @Get('/gone')
+  gone(ctx: NodeContext) {
+    return ctx.throw(HttpStatus.GONE, { detail: 'removed' })
+  }
+}
+
+@Module({ controllers: [HelloController] })
+export class AppModule {}
+
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(NodeBroker, { prefix: '/api' })
+
+http.listen(3000, { host: '0.0.0.0' })
+await http.ready()
+```
+
+## Exports
+
+| Symbol | Description |
+| --- | --- |
+| `NodeBroker<TEvents>` | The broker you pass to `connectTo()`. |
+| `NodeContext<TEvents>` | The context your handlers receive, plus `rawBody`. |
+| `NodeCore<TEvents>` | The application object. |
+| `NodeAdapter<TEvents>` | The transport implementation. |
+| `compile(pattern)`, `matchSegments(pattern, actual)` | The path matcher, exported so you can unit-test your own patterns. |
+| `collectBody(limit)`, `parseBody(raw, contentType)` | The body reader, exported for the same reason. |
+
+```ts
+import { compile, matchSegments } from '@glandjs/node'
+
+matchSegments(compile('/users/:id'), ['users', '42'])       // { id: '42' }
+matchSegments(compile('/users/:id'), ['users', '42', 'x'])  // undefined
+```
+
+<Aside type="note" title="instance is void">
+  There is no framework application object here, so `TApp` is `void` and `http.instance`
+  is `undefined`. `http.adapter.server` is the `http.Server` once it is listening.
+</Aside>
+
+## A real onion, and native verbs
+
+`node:http` has no opinions about hooks, so the adapter walks the middleware chain
+itself as a recursive promise onion. `await next()` waits, and a downstream `throw`
+reaches an upstream `catch`.
+
+Every extended and WebDAV verb routes natively: the adapter compiles the pattern and
+compares segments itself, and `ALL` matches any method.
+
+```ts
+http.use(async (ctx, next) => {
+  const started = Date.now()
+  await next()
+  console.log(`${ctx.method} ${ctx.path} ${Date.now() - started}ms`)
+})
+```
+
+Registration order is the tiebreak when two patterns match, and literal paths are
+compared **case-sensitively**.
+
+## One way to read a body
+
+There is no framework parser to configure, so the adapter installs a single body
+collector and decodes from the `Content-Type`:
+
+```ts
+http.bodyParser({ limit: '1mb' })   // 'b', 'kb', 'mb', 'gb'; defaults to 100 kB
+```
+
+`ctx.body` is the decoded value and `ctx.rawBody` is the original `Buffer`, so anything
+unusual is still reachable. The collector is only installed when a parser was declared,
+and it is always mounted **first**.
+
+## What it cannot do
+
+- **`useRaw()`** — there is no `use()` in `node:http`, so the adapter warns and ignores
+  it. `useStaticAssets()` queues a wildcard route instead.
+- **Multipart** — stream it yourself; the collector buffers.
+- **`trustProxy`** — nothing reads `X-Forwarded-*`, so `ctx.ip` is
+  `socket.remoteAddress`.
+- **Views.**
+- **Signed cookies** — `{}`.
+
+What it does better than the rest: byte-range `sendFile` (`Range` is honoured and a
+partial request answers `206`), explicit `Content-Length` on files, and a
+`204`/`304` that never trips `ERR_HTTP_BODY_NOT_ALLOWED`.
+
+## See also
+
+- [Mirrored adapter documentation](/reference/http/adapters/node)
+- [The adapter contract](/reference/http/architecture/adapter-contract)
+- [Writing an adapter](/reference/http/architecture/writing-an-adapter)
+- [Adapter matrix](/reference/http/adapter-matrix)

@@ -1,0 +1,136 @@
+---
+title: '@glandjs/fastify'
+badge: '@glandjs/fastify@1.1.0-beta'
+description: The Fastify 5 transport — one real preHandler onion, plugin-based body parsing, and the verbs Fastify cannot route.
+---
+
+import { Aside } from '@astrojs/starlight/components'
+
+`@glandjs/fastify` binds your controllers and channels to a
+[Fastify 5](https://fastify.dev) instance. It is the adapter with the most internals —
+Fastify seals its hook chain once, so the middleware onion has to be composed rather
+than mounted one handler at a time.
+
+```bash
+pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/fastify fastify reflect-metadata
+```
+
+<Aside type="note" title="This page is a summary">
+  The full documentation is [mirrored from the repository](/reference/http/adapters/fastify)
+  on every build.
+</Aside>
+
+## Attaching it
+
+```ts
+import { GlandFactory } from '@glandjs/core'
+import { Controller, Module } from '@glandjs/common'
+import { Get } from '@glandjs/http'
+import { FastifyBroker, type FastifyContext } from '@glandjs/fastify'
+
+@Controller('/products')
+export class ProductController {
+  @Get('/:id')
+  async find(ctx: FastifyContext) {
+    return { product: await ctx.call('db:product:find', { id: ctx.params.id }) }
+  }
+}
+
+@Module({ controllers: [ProductController] })
+export class AppModule {}
+
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(FastifyBroker, { poweredBy: false })
+
+http.listen(3000)
+await http.ready()   // Fastify loads plugins asynchronously
+```
+
+`ready()` matters here more than anywhere else: `listen()` alone does not mean the
+plugin graph has resolved.
+
+## Exports
+
+| Symbol | Description |
+| --- | --- |
+| `FastifyBroker<TEvents>` | The broker you pass to `connectTo()`. |
+| `FastifyContext<TEvents>` | The context your handlers receive. |
+| `FastifyCore<TEvents>` | The application object, plus `http.fastify`. |
+| `FastifyAdapter<TEvents>` | The transport implementation. |
+
+`http.fastify` is the raw instance, which is where Fastify plugins go.
+
+## The middleware onion is real
+
+Fastify's `preHandler` hooks cannot be added after the chain is sealed, so the adapter
+records every middleware you register and installs **one** composed hook that walks
+the recorded chain as a genuine promise onion. `await next()` waits, and a downstream
+`throw` reaches an upstream `catch`.
+
+```ts
+http.use(async (ctx, next) => {
+  const started = Date.now()
+  await next()
+  console.log(`${ctx.method} ${ctx.path} ${Date.now() - started}ms`)
+})
+```
+
+## Plugins instead of `useRaw()`
+
+`useRaw()` is **not** supported: Fastify middleware is not a function you call, it is a
+plugin you register. The adapter logs a warning and ignores it rather than failing
+quietly.
+
+```ts
+http.ready().then(() => http.fastify.register(require('@fastify/helmet')))
+```
+
+| Feature | Needs | Install |
+| --- | --- | --- |
+| Cookies | `@fastify/cookie` | `pnpm add @fastify/cookie` |
+| Form bodies | `@fastify/formbody` | `pnpm add @fastify/formbody` |
+| Static files | `@fastify/static` | `pnpm add @fastify/static` |
+| Multipart | `@fastify/multipart` | `pnpm add @fastify/multipart` |
+| Views | `@fastify/view` | `pnpm add @fastify/view` |
+
+Each is a peer dependency marked `optional`, and a feature that needs one throws a
+message naming the package rather than failing with `undefined is not a function`.
+
+## The verbs Fastify cannot route
+
+`node:http#METHODS` is Fastify's ceiling, so `MKWORKSPACE`, `UPDATE` and a handful of
+other extended verbs have no Fastify equivalent. The adapter says so at boot:
+
+```
+[HTTP:Fastify] WARN Fastify cannot route "MKWORKSPACE" (Provided method is invalid!).
+  The method is not in node:http#METHODS, so it has no Fastify equivalent. Use
+  @glandjs/express, @glandjs/koa, @glandjs/hono or @glandjs/node if the application
+  needs it.
+```
+
+`PROPFIND`, `SEARCH`, `COPY`, `MOVE`, `LOCK` and the rest **do** work.
+
+## One parser that starts on
+
+Fastify parses JSON by default. The adapter removes its own content-type parser when you
+declare nothing, so `bodyParser: false` behaves identically on all five transports —
+the one exception in the whole matrix, and it is fixed here.
+
+## What it cannot do
+
+- `useRaw()` — register a plugin instead.
+- Signed cookies: Fastify has no signed cookies, so `ctx.signedCookies` is always `{}`.
+  Returning `{}` rather than throwing keeps a controller portable.
+- `sendFile` byte ranges: `start`/`end` are reported as unsupported. `maxAge` is honoured.
+
+<Aside type="tip">
+  `close()` is Fastify's own, so it refuses new requests and drains the in-flight ones.
+  The other four adapters close idle connections out from under `server.close()` so a
+  long keep-alive does not become a long shutdown.
+</Aside>
+
+## See also
+
+- [Mirrored adapter documentation](/reference/http/adapters/fastify)
+- [Adapter matrix](/reference/http/adapter-matrix)
+- [`@glandjs/http`](/packages/http)

@@ -1,122 +1,199 @@
 ---
 title: '@glandjs/http'
-badge: '@glandjs/http@1.0.0-beta'
-description: The HTTP layer — route decorators, HttpContext, the HttpCore application surface, HttpBroker and the server factory.
+badge: '@glandjs/http@1.1.0-beta'
+description: The framework-agnostic HTTP core — route decorators, HttpContext, the middleware onion, HttpCore, HttpBroker and the adapter contract.
 ---
 
 import { Aside } from '@astrojs/starlight/components'
 
+`@glandjs/http` is everything HTTP that is **not** a particular server. It owns the
+route decorators, the abstract context, the promise-based middleware onion, the
+request lifecycle, CORS, cookies, problem details and the lifecycle events. It does
+**not** import a server, a router or a framework.
 
-`@glandjs/http` contains everything HTTP that is not specific to Express: the route
-decorators, the abstract context, the protocol-agnostic application object, and the
-broker that turns discovered routes into real ones. A concrete adapter such as
-`@glandjs/express` supplies the transport.
+One core, five transports. The same controller, the same middleware and the same
+assertions produce the same results on Express, Fastify, Koa, Hono and `node:http`.
 
 ```bash
-pnpm add @glandjs/http
+pnpm add @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/express reflect-metadata
 ```
 
-## Why this layer exists
+<Aside type="note" title="This page is a map">
+  The exhaustive reference is generated from the repository on every build, so it cannot
+  disagree with the code: [API reference](/reference/http/api),
+  [Getting started](/reference/http/guides/getting-started),
+  [The context](/reference/http/guides/context),
+  [Middleware](/reference/http/guides/middleware),
+  [Replies](/reference/http/guides/replies),
+  [Errors](/reference/http/guides/errors),
+  [CORS](/reference/http/guides/cors) and the
+  [adapter matrix](/reference/http/adapter-matrix).
+</Aside>
 
-> HTTP is not your app — it's just a protocol. Gland treats it that way.
+## The two layers
 
-`@glandjs/http` creates an isolated, internal event channel named `http` which routes
-messages from incoming HTTP requests into your Gland modules and controllers — and
-then emits outgoing responses back through the same channel.
+| | `@glandjs/http` | An adapter |
+| --- | --- | --- |
+| Owns | reply coercion, the middleware onion, the request lifecycle, CORS, cookies, problem details, path normalisation, SSE framing | building a context, putting a route on a router, mounting one framework middleware, writing a reply, binding and releasing the socket |
+| Knows about Express | nothing | everything |
 
-The result is a clean separation of concerns: your core business logic doesn't know or
-care where a request came from or how the response is sent. It only handles events.
+```ts
+// The adapter changes. Nothing else does.
+import { GlandFactory } from '@glandjs/core'
+import { ExpressBroker } from '@glandjs/express' // or FastifyBroker, KoaBroker, HonoBroker, NodeBroker
+import { AppModule } from './app.module'
 
-**This package implements no HTTP server itself.** It defines the *interface* — a
-protocol contract — and relies on adapter packages such as
-[`@glandjs/express`](/packages/express) to handle the actual server lifecycle. That is
-what lets you plug in a different HTTP engine later without touching your application.
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker, { poweredBy: false })
 
-The HTTP layer is designed to be replaceable. Every adapter connected to it becomes a
-plug-in that speaks the same language — message-driven, modular, and completely
-testable.
+http.listen(3000)
+```
 
+<Aside type="caution" title="listen() is not awaited; ready() is">
+  `listen()` is fluent and returns the application immediately — startup failures are
+  reported on the `http:server:crashed` event, never thrown. `await http.ready()` is the
+  promise that actually resolves once the socket is bound.
+</Aside>
 
 ## Route decorators
 
-Ten decorators, all taking an optional path. The default path is `'/'`.
+Twenty-one verb decorators plus `@RequestMapping`. Every one takes the same optional
+argument and writes the same two metadata keys.
 
 ```ts
 import {
-  Get, Post, Put, Patch, Delete,
-  Options, Head, Search, All,
+  Get, Post, Put, Patch, Delete, Head, Options, All,
+  Trace, Connect, Purge, Search, Propfind, Proppatch, Mkcol,
+  Copy, Move, Lock, Unlock, Acl, Report,
   RequestMapping, RequestMethod,
 } from '@glandjs/http'
 ```
 
-| Decorator | Method |
-| --- | --- |
-| `@Get(path?)` | `GET` |
-| `@Post(path?)` | `POST` |
-| `@Put(path?)` | `PUT` |
-| `@Delete(path?)` | `DELETE` |
-| `@Patch(path?)` | `PATCH` |
-| `@Options(path?)` | `OPTIONS` |
-| `@Head(path?)` | `HEAD` |
-| `@Search(path?)` | `SEARCH` |
-| `@All(path?)` | `ALL` |
-| `@RequestMapping({ path?, method? })` | any `RequestMethod` |
-
-They write `PATH_METADATA` and `METHOD_METADATA` onto the method function itself,
-which is exactly what core's `Explorer` reads.
+Each one is `(path?: string | string[]) => MethodDecorator & PropertyDecorator`. The
+default path is `'/'`, and an empty path is normalised to `'/'`.
 
 ```ts
-@Controller('products')
+@Controller('/products')
 export class ProductController {
-  @Get()          list(ctx) {}
-  @Get(':id')     getOne(ctx) {}
-  @Post()         create(ctx) {}
+  @Get() list(ctx) {}
+  @Get('/:id') find(ctx) {}
+  @Post() create(ctx) {}
 
-  @RequestMapping({ path: 'search', method: RequestMethod.GET })
-  search(ctx) {}
+  // Any of the 33 RequestMethod members, including the extended ones.
+  @RequestMapping({ path: 'search', method: RequestMethod.SEARCH }) search(ctx) {}
 }
 ```
 
-<Aside type="caution" title="Pass a single string path">
-  The signature is `string | string[]`, but the path is concatenated downstream, so
-  an array produces a broken route. Use one string.
+`RequestMethod` is the full set: the seven everyday verbs plus `ALL`, `CONNECT`,
+`TRACE`, `PURGE`, `SEARCH`, the WebDAV verbs (`COPY`, `LOCK`, `MKCOL`, `MOVE`,
+`PROPFIND`, `PROPPATCH`, `UNLOCK`), `ACL`, the binding verbs (`BIND`, `REBIND`,
+`UNBIND`), the versioning verbs (`CHECKOUT`, `MERGE`, `MKACTIVITY`, `MKWORKSPACE`,
+`REPORT`, `UPDATE`) and the SSE verbs (`NOTIFY`, `SUBSCRIBE`, `UNSUBSCRIBE`).
+
+<Aside type="tip" title="Decorators come from @glandjs/http, not from the adapter">
+  A controller is transport-agnostic, so it must not import anything transport-specific.
+  `Controller`, `Channel`, `Module` and `On` come from `@glandjs/common`; the route
+  decorators come from `@glandjs/http`. Only `connectTo()` differs between transports.
 </Aside>
 
-### `RequestMethod`
+## `HttpCore`
+
+The application object `connectTo()` hands back. Almost every method is fluent.
 
 ```ts
-enum RequestMethod {
-  GET = 'GET', POST = 'POST', PUT = 'PUT', DELETE = 'DELETE', PATCH = 'PATCH',
-  ALL = 'ALL', OPTIONS = 'OPTIONS', HEAD = 'HEAD', SEARCH = 'SEARCH',
-  PROPFIND = 'PROPFIND', PROPPATCH = 'PROPPATCH', MKCOL = 'MKCOL',
-  COPY = 'COPY', MOVE = 'MOVE', LOCK = 'LOCK', UNLOCK = 'UNLOCK',
+class HttpCore {
+  constructor(adapter: HttpServerAdapter, options?: HttpApplicationOptions)
+
+  // identity
+  get broker(): HttpEventBroker
+  get id(): string
+  get instance(): TApp            // the raw framework app
+  get settings(): HttpApplicationSettings
+  get routes(): readonly RegisteredRoute[]
+  get middleware(): readonly MiddlewareEntry[]
+  get port(): number | undefined
+
+  // lifecycle
+  listen(port: number, options?: ServerListening): this
+  ready(): Promise<this>
+  close(): Promise<void>
+
+  // middleware
+  use(middleware): this
+  use(path: string | string[], middleware): this
+  useRaw(...args): this
+  setErrorHandler(handler): this
+  enableCors(config?): this
+
+  // routing — 20 verb shortcuts, plus:
+  registerRoute(method, path, action, origin?): this
+
+  // configuration
+  setGlobalPrefix(prefix): this
+  useStaticAssets(path, options?): this
+  setViewEngine(engine): this
+  setBaseViewsDir(directory): this
+  bodyParser(options | false): this
+  json(options?): this
+  urlencoded(options?): this
+  text(options?): this
+  multipart(options?): this
+  raw(options?): this
+
+  // observability
+  on(event, listener): this
+  off(event, listener): this
+  handleError(error, message): void
 }
 ```
+
+```ts
+const http = app.connectTo(ExpressBroker)
+
+http.use(async (ctx, next) => {
+  const started = Date.now()
+  await next()
+  console.log(`${ctx.method} ${ctx.path} ${Date.now() - started}ms`)
+})
+http.useRaw(compression())            // framework middleware, unmolested
+http.enableCors({ origin: 'https://example.com', credentials: true })
+http.useStaticAssets('public', { prefix: '/static' })
+http.bodyParser({ json: true, urlencoded: { extended: true }, limit: '1mb' })
+
+http.listen(3000, { host: '0.0.0.0' })
+await http.ready()
+```
+
+<Aside type="caution">
+  `bodyParser` defaults to **`false`**: nothing is parsed until you declare a parser.
+  The exception is Fastify, where the adapter removes its own JSON parser when you
+  declare nothing, so `bodyParser: false` behaves the same everywhere.
+</Aside>
 
 ## `HttpContext`
 
-The abstract context. Every adapter provides a concrete subclass.
+The abstract context. Every adapter provides a concrete subclass, so a controller
+receives the same shape on every transport.
 
 ```ts
-abstract class HttpContext<TRequest = any, TResponse = any, TEvents extends EventRecord = EventRecord>
-  extends Context<TEvents> {
-  constructor(
-    protected readonly events: HttpEventCore<TEvents>,
-    public readonly req: TRequest,
-    public readonly res: TResponse,
-  )
-
+abstract class HttpContext<TRequest, TResponse, TEvents> extends Context<TEvents> {
+  // state
   params: Record<string, string>
-  host?: string
+  requestId: string
+  startedAt: number
+  aborted: boolean
+  written: boolean
+  req: TRequest
+  res: TResponse
 
-  // Request
+  // request
   get body(): any
-  get query(): Record<string, string | string[] | undefined>
-  get headers(): Record<string, string | string[]>
   get method(): RequestMethod
   get path(): string
   get url(): string
   get originalUrl(): string
+  get query(): Record<string, string | string[] | undefined>
+  get headers(): Record<string, string | string[] | undefined>
   get hostname(): string
   get ip(): string | undefined
   get protocol(): string
@@ -125,289 +202,359 @@ abstract class HttpContext<TRequest = any, TResponse = any, TEvents extends Even
   get stale(): boolean
   get fresh(): boolean
   get subdomains(): string[]
-  get cookies(): Record<string, string>
-  get signedCookies(): Record<string, string>
-  accepts(types?): string | false
+  get host(): string | undefined
   is(type): string | false | null
+  accepts(types?): string | false
 
-  // Response
+  // response — all fluent
   status(code): this
+  redirect(url, status?): this
   send(data, statusCode?, headers?): this
   json(data, statusCode?, headers?): this
-  html(html, statusCode?, headers?): this
-  text(text, statusCode?, headers?): this
-  xml(xml, statusCode?, headers?): this
-  jsonp(data): this
-  redirect(url): this
-  location(url): this
+  html(body, statusCode?, headers?): this
+  text(body, statusCode?, headers?): this
+  xml(body, statusCode?, headers?): this
   end(): this
-  attachment(filename?): this
-  vary(field): this
-  render(view, options?, callback?): this
   sendFile(path, options?, callback?): this
-  download(path, filename, options?): this
-  format(formatters): this
-  sse(): this
+  download(path, filename?, options?): this
+  attachment(filename?): this
+  location(url): this
+  vary(fields): this
+  get responded(): boolean
 
-  // Headers
+  // headers — the request/response split is explicit
+  getHeader(name): HttpHeaderValue      // request
+  getResponseHeader(name): HttpHeaderValue  // response
   setHeader(name, value): this
   setHeaders(headers): this
-  getHeader(name): string | string[] | undefined
   hasHeader(name): boolean
+  hasResponseHeader(name): boolean
   removeHeader(name): this
 
-  // Cookies
-  setCookie(name, value, options?): this
+  // cookies
+  get cookies(): RequestCookies
+  get signedCookies(): RequestCookies
   getCookie(name): string | undefined
+  setCookie(name, value, options?): this
   clearCookie(name, options?): this
-  deleteCookie(name, options?): void
+  deleteCookie(name, options?): this
 
-  throw(status: HttpStatus, options?): this
+  // gland + errors
+  throw(status, options?): this
+  sse(options?): SseStream
+  get elapsed(): number
+  get lifecycle(): HttpEventBroker
 }
 ```
 
 Inherited from `Context`: `state`, `setState()`, `error`, `emit()`, `call()`, `on()`,
 `once()`, `off()`.
 
-<Aside type="caution" title="Not implemented yet">
-  `sse()` currently returns the context without opening a stream, and `jsonp()` is a
-  pass-through. Do not build on them yet.
-</Aside>
-
-## `HttpCore`
-
-The application object you get back from `connectTo()`. It mirrors the shape of a
-familiar web framework's app instance.
-
 ```ts
-class HttpCore<TServer, TApp, TRequest, TResponse> {
-  constructor(adapter: HttpServerAdapter<...>, options?: HttpApplicationOptions)
+@Controller('/products')
+export class ProductController {
+  @Get('/:id')
+  async find(ctx: HttpContext) {
+    // ctx.call() reaches a channel by name — no import, no injection
+    return { product: await ctx.call('db:product:find', { id: ctx.params.id }) }
+  }
 
-  get broker(): HttpEventCore<HttpGlandEvents>
-  get id(): string
+  @Get('/search')
+  search(ctx: HttpContext) {
+    // a repeated query key becomes an array
+    return { tags: ctx.query.tag }
+  }
 
-  listen(port: number, args?: { host?: string; message?: string }): void
-  use(...args: any[]): void
-
-  get(path, action): this
-  post(path, action): this
-  put(path, action): this
-  patch(path, action): this
-  delete(path, action): this
-  head(path, action): this
-  options(path, action): this
-  all(path, action): this
-  search(path, action): this
-  propfind(path, action): this
-  proppatch(path, action): this
-  mkcol(path, action): this
-  copy(path, action): this
-  move(path, action): this
-  lock(path, action): this
-  unlock(path, action): this
-
-  json(options?): this
-  urlencoded(options?: { extended?: boolean }): this
-  raw(options?): this
-  text(options?): this
-
-  enableCors(options: CorsConfig): void
-  setGlobalPrefix(prefix: string): void
-  useStaticAssets(path: string): void
-  setViewEngine(engine: string): this
-  setBaseViewsDir(path: string | string[]): this
-  handleError(error: unknown, message: string): void
+  @Get('/gone')
+  gone(ctx: HttpContext) {
+    // throws nothing: it writes an RFC 7807 document and marks the context written
+    return ctx.throw(HttpStatus.GONE, { detail: 'removed' })
+  }
 }
 ```
 
-```ts
-const server = app.connectTo(ExpressBroker)
+<Aside type="caution" title="Names that do not exist">
+  There is no `ctx.header()`, no `ctx.code()`, no `ctx.body = …`, no `ctx.query()`,
+  no `jsonp()` and no `render()`. The setters are `setHeader`/`setHeaders`, the status
+  setter is `status()`, `body` is a read-only getter and views are configured on the
+  application rather than rendered from the context.
+</Aside>
 
-server.use((ctx, next) => { ctx.state.t0 = Date.now(); return next() })
-server.useStaticAssets('public')
-server.setGlobalPrefix('/api')
-server.enableCors({ origin: '*' })
-server.json()
-server.listen(3000, { host: '0.0.0.0', message: 'ready' })
+## A handler returns a value, not a response
+
+The return value *is* the response. `respond()` is skipped when the context already
+answered, so returning `ctx.send(...)` and returning a plain object are both correct.
+
+| You return | The client gets |
+| --- | --- |
+| `undefined` | nothing |
+| a plain object or array | `application/json` |
+| a number or boolean | `application/json` |
+| a string | text, or HTML when it looks like HTML |
+| a `Buffer` / `Uint8Array` | bytes |
+| a `Readable` | piped |
+| an `SseStream` | `text/event-stream` |
+| an `HttpReply` | exactly what it says |
+
+```ts
+import { HttpReply } from '@glandjs/http'
+
+@Get('/created')
+created(ctx) {
+  return HttpReply.json({ id: 'p1' }, { status: 201, headers: { location: '/products/p1' } })
+}
 ```
+
+`HttpReply` has nine constructors: `json`, `text`, `html`, `xml`, `buffer`, `stream`,
+`file`, `redirect` and `empty`.
+
+## Middleware
+
+A promise onion, in the Koa model rather than the Express one: `await next()` really
+waits, and a downstream `throw` reaches an upstream `catch`.
+
+```ts
+http.use(async (ctx, next) => {
+  const started = Date.now()
+  await next()
+  console.log(`${ctx.method} ${ctx.path} ${Date.now() - started}ms`)
+})
+
+http.use('/admin', adminGuard)   // scoped to a path
+```
+
+Built in, with no extra dependency:
+
+```ts
+import { createCorsMiddleware, bodyLimitMiddleware, withErrors } from '@glandjs/http'
+
+http.use(createCorsMiddleware({ origin: 'https://example.com', credentials: true }))
+http.use(bodyLimitMiddleware(1_000_000))   // before any body parser
+http.setErrorHandler(myRenderer)
+```
+
+The default renderer produces RFC 7807 problem details and **drops the message** for
+anything that is not an `HttpException` — the message is still logged on
+`http:request:error`.
+
+<Aside type="caution" title="Express is the exception">
+  Express's `next()` is a hand-off, not a promise, so on `@glandjs/express` an upstream
+  `catch` cannot see a downstream throw. That is a property of Express, not of this
+  layer; [Middleware](/reference/http/guides/middleware#the-express-caveat) explains what
+  to do about it.
+</Aside>
+
+## The lifecycle events
+
+One bus carries eight events. It is observability, not control flow.
+
+| Event | Fires |
+| --- | --- |
+| `http:route:registered` | a route is added to the table |
+| `http:route:miss` | no route matched |
+| `http:request:start` | `{ id, method, path, url, ip }` |
+| `http:request:end` | `{ status, duration }` — always |
+| `http:request:error` | only when the handler threw |
+| `http:server:listening` | the socket is bound, with the resolved port |
+| `http:server:closed` | shutdown finished |
+| `http:server:crashed` | a startup or runtime failure — the one to watch |
+
+```ts
+import { HttpEvent } from '@glandjs/http'
+
+http.on(HttpEvent.ServerCrashed, ({ message, error }) => {
+  logger.error({ message, error }, 'http server')
+})
+```
+
+## `HttpServerAdapter`
+
+The whole extension seam. An adapter implements eleven members; everything else is
+inherited from the base class, which is what keeps the five transports agreeing.
+
+```ts
+abstract class HttpServerAdapter<TServer, TApp, TRequest, TResponse, TContext> {
+  constructor(instance: TApp, options?: HttpApplicationOptions)
+
+  // what an adapter implements
+  abstract onInitialize(options?): void | Promise<void>
+  abstract createContext(req, res, events?): TContext      // idempotent per request
+  abstract registerRoute(method, path, action, origin?): void
+  abstract useOne(...args): unknown
+  abstract bridgeGland(entry, request?, response?, next?): (...args) => unknown
+  abstract write(ctx, payload: ReplyPayload): void | Promise<void>
+  abstract responded(ctx): boolean                          // never double-write
+  abstract bodyParser(options | false): void
+  abstract useStaticAssets(path, options?): void
+  abstract listen(port, options?): void | Promise<void>
+  abstract close(): Promise<void>
+
+  // what it may override
+  protected afterMiddleware(): void | Promise<void>
+  protected afterRoutes(): void | Promise<void>
+  protected beforeFlush(): void
+  protected syncParams(ctx, req): void
+
+  // what it inherits
+  initialize(options?): Promise<void>
+  finalize(): Promise<void>
+  route(method, path, action, origin?): RegisteredRoute
+  dispatch(route, req, res): Promise<TContext>
+  respond(result, ctx): Promise<void>
+  notFound(ctx): Promise<void>
+  crash(message, error): void
+  use(...): this
+  useRaw(...): this
+  defer(work): this
+  setGlobalPrefix(prefix): this
+  routeTable: readonly RegisteredRoute[]
+}
+```
+
+Two rules make the contract work: `createContext` is memoised per request, and `write`
+is only ever called once per response.
+
+Ordering is decided once, by buffering. `finalize()` always runs the same six steps:
+
+1. `onInitialize` — framework settings, the error and the 404 handler
+2. the middleware queue, in call order
+3. `afterMiddleware` — for Fastify, whose hook chain seals once
+4. deferred plugins
+5. the routes
+6. `afterRoutes` — the catch-all 404, which has to sit *behind* the routes
+
+[Writing an adapter](/reference/http/architecture/writing-an-adapter) walks through a
+sixth transport from this contract.
 
 ## `HttpBroker`
 
-Bridges core's route events to the application object.
+The bridge that turns `gland:define:route` into real routes.
 
 ```ts
 class HttpBroker<TEvents, TApp, TOptions> extends BrokerAdapter<TEvents, TApp, TOptions> {
   constructor(instance: TApp, options?: TOptions)
   initialize(): TApp
+  get routeCount(): number
 }
 ```
 
-`initialize()` subscribes to `gland:define:route` and calls
-`app[payload.method.toLowerCase()](payload.meta.path, payload.action)` for each
-discovered route. Concrete adapters extend it and supply the instance:
+`initialize()` subscribes to `gland:define:route`, registers every route it receives
+with its `fullPath`, and — when none arrive — logs a loud, specific error rather than
+leaving you with a silent zero-route table.
 
 ```ts
-export class ExpressBroker<TEvents extends EventRecord> extends HttpBroker<
-  TEvents, ExpressCore<TEvents>, HttpApplicationOptions
-> {
+export class ExpressBroker<TEvents> extends HttpBroker<TEvents, ExpressCore<TEvents>> {
   constructor(options?: HttpApplicationOptions) {
     super(new ExpressCore<TEvents>(options), options)
   }
 }
 ```
 
-## `HttpServerAdapter`
+## `HttpEventBroker`
 
-The abstract adapter every transport implements.
+An `EventBroker` with three additions, used for the lifecycle bus.
 
 ```ts
-abstract class HttpServerAdapter<TServer, TApp, TRequest, TResponse> {
-  constructor(public instance: TApp)
-  events: HttpEventCore<HttpGlandEvents>
-
-  abstract initialize(): Promise<void> | void
-  abstract listen(port: string | number, hostname?: string, message?: string): void
-  abstract use(...args: any): any
-  abstract registerRoute(method: string, path: string, action: RouteAction): void
-  abstract enableCors(options: CorsConfig): void
-  abstract setViewEngine(engine: string): this
-  abstract setBaseViewsDir(path: string | string[]): this
-  abstract setGlobalPrefix(prefix: string): void
-  abstract useStaticAssets(path: string, options?: any): void
-  abstract json(options?: any): this
-  abstract urlencoded(options?: { extended?: boolean }): this
-  abstract raw(options?: any): this
-  abstract text(options?: any): this
-
-  close(): Promise<void>
-  handleError(error: any, message: string): void   // emits 'server:crashed', then rethrows
+class HttpEventBroker<TEvents> extends EventBroker<TEvents> {
+  safeEmit(event, payload): boolean    // false when nobody was listening
+  hasListener(event): boolean
+  observe(event, listener): () => void // returns an unsubscribe function
 }
 ```
 
-## `HttpEventCore`
+## `SseStream`
 
-An `EventBroker` with one addition.
-
-```ts
-class HttpEventCore<TEvents extends EventRecord> extends EventBroker<TEvents> {
-  safeEmit<K>(event: K, payload: TEvents[K]): boolean
-}
-```
-
-`safeEmit` returns `false` when nothing was listening, instead of throwing — used for
-internal events such as `server:crashed` where "nobody cares" is not an error.
-
-## `ServerFactory`
+Server-sent events are implemented, not a placeholder.
 
 ```ts
-class ServerFactory {
-  static create(options?: HttpApplicationOptions, listener?: RequestListener): Server
+@Get('/events')
+stream(ctx) {
+  const sse = ctx.sse({ heartbeat: 15_000, retry: 3_000 })
+  sse.event('tick', { at: Date.now() })
+  sse.comment('keep-alive')
+  return sse
 }
 ```
-
-Returns an `http` or `https` server depending on `options.https`.
 
 ## Options
 
 ```ts
 interface HttpApplicationOptions {
+  prefix?: string
+  bodyParser?: BodyParserOptions | false   // default false
+  poweredBy?: string | false                // default 'Gland'
+  logLevel?: 'info' | 'error' | 'warn' | 'debug' | 'verbose'
+  trustProxy?: boolean | number | string
   https?: HttpsOptions
+  views?: { engine: unknown; directory: string | string[]; extension?: string }
+  static?: readonly { root: string; prefix?: string; options?: Record<string, unknown> }[]
 }
 
-interface HttpsOptions {
-  key?: any; cert?: any; ca?: any; pfx?: any; passphrase?: string
-  ciphers?: string; honorCipherOrder?: boolean
-  requestCert?: boolean; rejectUnauthorized?: boolean
-  SNICallback?: (servername: string, cb: (err: Error, ctx: any) => any) => any
-  secureOptions?: number
-  // …
+interface BodyParserOptions {
+  json?: boolean | JsonBodyParserOptions
+  urlencoded?: boolean | UrlencodedBodyParserOptions
+  multipart?: boolean | MultipartBodyParserOptions
+  text?: boolean | TextBodyParserOptions
+  raw?: boolean | RawBodyParserOptions
+  limit?: number | string     // default 102400 — 100 kB, not the framework's own default
+  inflate?: boolean
 }
-```
-
-```ts
-const server = app.connectTo(ExpressBroker, {
-  https: { key: readFileSync('key.pem'), cert: readFileSync('cert.pem') },
-})
 ```
 
 ## CORS
 
+Implemented in this package, for all five adapters, with no dependency on the `cors`
+package. Defaults match that package deliberately.
+
+| Option | Default |
+| --- | --- |
+| `origin` | `'*'` |
+| `methods` | `GET, HEAD, PUT, PATCH, POST, DELETE` |
+| `credentials` | `false` |
+| `maxAge` | `600` |
+| `vary` | `true` |
+| `optionsSuccessStatus` | `204` |
+
 ```ts
-interface CorsOptions {
-  origin?: StaticOrigin | CustomOrigin                    // @default '*'
-  methods?: string | string[]                             // @default 'GET,HEAD,PUT,PATCH,POST,DELETE'
-  allowedHeaders?: string | string[]
-  exposedHeaders?: string | string[]
-  credentials?: boolean                                   // @default false
-  maxAge?: number
-  preflightContinue?: boolean                             // @default false
-  optionsSuccessStatus?: number                           // @default 204
-}
-
-type CorsConfig = boolean | CorsOptions | CorsOptionsDelegate<IncomingMessage>
+http.enableCors({ origin: 'https://example.com', credentials: true, maxAge: 86_400 })
 ```
 
-<Aside type="caution">
-  The `cors` package is loaded lazily and is **not** a dependency of
-  `@glandjs/express`. Install it before calling `enableCors()`.
-</Aside>
+`maxAge` is **clamped to 600** because Chrome and Firefox both cap preflight caching at
+ten minutes. `credentials: true` together with `origin: '*'` is a contradiction and is
+rejected at boot rather than at request time.
 
-```bash
-pnpm add cors
-```
-
-## Cookies and options
+## Cookies
 
 ```ts
 interface CookieOptions {
-  maxAge?: number; name?: string; secret?: string
-  path?: string; domain?: string
+  maxAge?: number           // MILLISECONDS
+  path?: string             // default '/'
+  domain?: string
   sameSite?: 'strict' | 'lax' | 'none' | boolean
-  secure?: boolean; secureProxy?: boolean; httpOnly?: boolean
-  signed?: boolean; overwrite?: boolean; expires?: Date
+  secure?: boolean
+  httpOnly?: boolean
+  signed?: boolean
+  secret?: string | string[]
+  expires?: Date
 }
 ```
 
-```ts
-interface SendOptions {
-  acceptRanges?: boolean; cacheControl?: boolean
-  dotfiles?: 'allow' | 'deny' | 'ignore'
-  end?: number; etag?: boolean
-  extensions?: string[] | string | boolean
-  immutable?: boolean
-  index?: string[] | string | boolean
-  lastModified?: boolean; maxAge?: string | number
-  root?: string; start?: number
-}
-```
+`maxAge` is milliseconds in Gland. `@fastify/cookie` uses seconds; the adapter
+converts, so the value you write is the value you mean.
 
 ## Types
 
-`RouteAction` and the CORS types are not re-exported from the package root. Import
-them from the subpath:
+`HttpStatus` and `HttpException` come from `@medishn/toolkit`, and `Context` from
+`@glandjs/core`. Neither is re-exported here.
 
 ```ts
-import type { RouteAction, CorsConfig, StaticOrigin } from '@glandjs/http/types'
+import { HttpStatus, HttpException, type Logger } from '@medishn/toolkit'
+import type { Context } from '@glandjs/core'
 ```
 
-```ts
-type RouteAction<TRequest, TResponse> =
-  (ctx: HttpContext<TRequest, TResponse>) => any | Promise<any>
-```
+## See also
 
-## Framework events
-
-```ts
-interface HttpGlandEvents {
-  options?: HttpApplicationOptions
-  'server:crashed': { message: string; error: any; stack: any }
-}
-```
-
-Subscribe to `server:crashed` to log transport failures centrally:
-
-```ts
-server.broker.on('server:crashed', ({ message, error }) => {
-  logger.error({ message, error }, 'http server error')
-})
-```
+- [HTTP layer overview](/reference/http) — the generated map of the mirrored docs
+- [Choosing an adapter](/reference/http/guides/adapters)
+- [Adapter matrix](/reference/http/adapter-matrix)
+- [Changelog](/changelog/http) — including the pending changesets
