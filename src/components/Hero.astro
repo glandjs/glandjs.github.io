@@ -8,6 +8,7 @@
  * narrow screens and a copy button — the same as every code block in the docs.
  */
 import { Icon, Code } from '@astrojs/starlight/components'
+import type { StarlightIcon } from '@astrojs/starlight/types'
 
 const { hero } = Astro.locals.starlightRoute.entry.data
 
@@ -15,7 +16,8 @@ if (!hero) throw new Error('The Gland hero component requires hero frontmatter.'
 
 const { title, tagline, actions } = hero
 
-const installCommand = 'npm install @glandjs/core @glandjs/common @glandjs/events'
+const installCommand =
+  'npm install @glandjs/core @glandjs/common @glandjs/events @glandjs/http @glandjs/node'
 
 const snippets = [
   {
@@ -61,17 +63,17 @@ export class Database {
     id: 'bootstrap',
     tab: 'Bootstrap',
     file: 'main.ts',
-    mark: '9-10',
+    mark: '8-9',
     code: `import 'reflect-metadata'
 import { GlandFactory } from '@glandjs/core'
 import { ExpressBroker } from '@glandjs/express'
 import { AppModule } from './app.module'
-import type { EventTypes } from './shared/events.interface'
 
 async function bootstrap() {
-  const app = await GlandFactory.create(AppModule)
-  const server = app.connectTo(ExpressBroker<EventTypes>)
-  server.listen(3000, { message: 'API ready on :3000' })
+  const { app, shutdown } = await GlandFactory.create(AppModule)
+  const http = app.connectTo(ExpressBroker)
+  http.listen(3000)
+  await http.ready()
 }
 void bootstrap()`,
     caption: 'Brokers carry the transport. Swap the adapter, keep the app.',
@@ -106,7 +108,9 @@ const facts = [
               class:list={['gland-hero__action', `gland-hero__action--${action.variant ?? 'minimal'}`]}
               {...(action.link.startsWith('http') ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
             >
-              {action.icon && <Icon name={action.icon} class="size-4" />}
+              {/* The icon in front matter is a plain string, while `Icon` also accepts a raw
+                  inline SVG; the two unions do not overlap, hence the cast. */}
+              {action.icon && <Icon name={action.icon as unknown as StarlightIcon} class="size-4" />}
               <span set:html={action.text} />
             </a>
           ))
