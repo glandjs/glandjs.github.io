@@ -88,7 +88,9 @@ These are the rules the codebase is held to. They are the reason the API is smal
    dependencies and circular references are all detected during bootstrap.
 
 <Aside type="tip" title="Judging it fairly">
-  Gland is young and its HTTP layer is still `1.0.0-beta`. If you need a battle-tested
-  HTTP stack today, run Gland channels beside Express and keep Express for routing.
-  The two compose without either one knowing about the other.
+  Gland is young and its HTTP layer ships under the `beta` tag. Read the
+  [adapter matrix](/reference/http/adapter-matrix) before depending on it: every transport
+  has an honest list of what it cannot do. If you need a battle-tested HTTP stack today,
+  run Gland channels beside Express and keep Express for routing — the two compose without
+  either one knowing about the other.
 </Aside>
