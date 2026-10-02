@@ -24,3 +24,21 @@ pnpm-debug.log*
 
 # VS code setting folder
 .vscode/
+
+# -----------------------------------------------------------------------------
+# Documentation synced from the Gland repositories.
+#
+# `pnpm docs:sync` (run automatically by `dev` and `build`) writes these from the
+# `docs/` folder of each repository. They are excluded so a change is never made in
+# two places, and re-published from its source on the next build instead.
+#
+# The hand-written pages live alongside them and *are* committed; `index.mdx` in each
+# folder is the editorial landing page for that section.
+# -----------------------------------------------------------------------------
+src/content/docs/reference/**
+!src/content/docs/reference/index.mdx
+!src/content/docs/reference/index.md
+src/content/docs/changelog/**
+
+# HTTP cache and the list of files written by the last sync run.
+node_modules/.cache/
