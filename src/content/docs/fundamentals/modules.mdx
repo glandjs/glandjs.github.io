@@ -133,7 +133,7 @@ The root module is the argument to `GlandFactory.create()`.
 import { GlandFactory } from '@glandjs/core'
 import { AppModule } from './app.module'
 
-const app = await GlandFactory.create(AppModule)
+const { app, shutdown } = await GlandFactory.create(AppModule)
 ```
 
 ## API
@@ -153,7 +153,8 @@ type ImportableModule<T = any> =
   | Promise<DynamicModule<T>>
 ```
 
-### `GlandFactory.create(root: Constructor): Promise<GlandBroker>`
+### `GlandFactory.create(root, options?): Promise<GlandApplication>`
 
 Walks the module graph, builds the container, runs the hooks and binds routes and
-channels. Returns a `GlandBroker` — see [`@glandjs/core`](/packages/core).
+channels. Resolves with `{ app, shutdown }` — the core bus and the handle that runs the
+shutdown phases. See [`@glandjs/core`](/packages/core).

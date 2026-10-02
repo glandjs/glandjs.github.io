@@ -45,14 +45,22 @@ The entry point. One static method.
 import { GlandFactory } from '@glandjs/core'
 import { AppModule } from './app.module'
 
-const app = await GlandFactory.create(AppModule)
+const { app, shutdown } = await GlandFactory.create(AppModule)
 ```
 
-### `static create(root: Constructor): Promise<GlandBroker>`
+### `static create(root, options?): Promise<GlandApplication>`
 
 Runs the whole bootstrap pipeline described in
-[Architecture](/introduction/architecture#the-bootstrap-sequence) and resolves with a
-`GlandBroker`.
+[Architecture](/introduction/architecture#the-bootstrap-sequence) and resolves **only
+once binding has finished**, so routes and channels are guaranteed to exist by the time
+you start listening.
+
+```ts
+interface GlandApplication {
+  readonly app: GlandBroker          // the core bus and adapter registry
+  shutdown(signal?: string): Promise<void>   // runs the shutdown phases
+}
+```
 
 <Aside type="tip" title="Debug output">
   Set the `GLAND_DEBUG` environment variable to log every bootstrap step. The logger
@@ -62,17 +70,21 @@ Runs the whole bootstrap pipeline described in
 
 ## `GlandBroker`
 
-The application object. Two members, no more.
+The core bus and adapter registry.
 
 | Member | Type | Description |
 | --- | --- | --- |
-| `broker` | `TGlandBroker` | The underlying `Broker<GlandEvents>`, for framework-level observation. |
+| `broker` | `TGlandBroker` | The underlying `EventBroker`, for framework-level observation. |
+| `id` | `string` | The id of the core bus. |
 | `connectTo(AdapterClass, options?)` | `<TApp>(...) => TApp` | Attach a protocol broker and return the transport application. |
+| `createContext(broker?)` | `Context<TEvents>` | Build a context already wired to this application's channels. |
+| `attachBinder(binder)` | `void` | `@internal` — called by the bootstrapper. |
+| `shutdown(signal?)` | `void` | Release the core bus and detach every adapter. |
 
 <Aside type="note">
-  `GlandBroker` is the return type of `create()` but is not itself exported from the
-  package's barrel — you get it through inference. There is no `listen()`, `close()`
-  or `use()` on it; those belong to the adapter you attach.
+  `GlandBroker` is reachable through `GlandApplication.app` but is not itself exported
+  from the package's barrel — you get it through inference. There is no `listen()`,
+  `close()` or `use()` on it; those belong to the adapter you attach.
 </Aside>
 
 ```ts
@@ -85,10 +97,17 @@ connectTo<TEvents extends EventRecord, TApp, TOptions>(
 ```
 
 ```ts
-const app = await GlandFactory.create(AppModule)
-const server = app.connectTo(ExpressBroker<EventTypes>)
-server.json()
-server.listen(3000)
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker)
+http.listen(3000)
+```
+
+`createContext()` is the escape hatch for work that is not a request: a CLI command, a
+queue consumer, a scheduled job, or a test that wants to call a channel directly.
+
+```ts
+const ctx = app.createContext()
+const product = await ctx.call('db:product:find', id)
 ```
 
 ## `BrokerAdapter`

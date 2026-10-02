@@ -87,18 +87,19 @@ import { ExpressBroker } from '@glandjs/express'
 import { AppModule } from './app.module'
 
 async function bootstrap() {
-  const app = await GlandFactory.create(AppModule)
-  const server = app.connectTo(ExpressBroker)
-  server.json()
-  server.listen(3000)
+  const { app } = await GlandFactory.create(AppModule)
+  const http = app.connectTo(ExpressBroker)
+  http.listen(3000)
+  await http.ready()
 }
 
 void bootstrap()
 ```
 
 `GlandFactory.create()` scans the module graph, instantiates everything, runs the
-lifecycle hooks and binds discovered routes and channels. `connectTo()` attaches a
-protocol broker and hands you back the transport application object.
+lifecycle hooks and binds discovered routes and channels — and resolves only once that
+is done. `connectTo()` attaches a protocol broker and hands you back the transport
+application object.
 
 ## How a request flows
 

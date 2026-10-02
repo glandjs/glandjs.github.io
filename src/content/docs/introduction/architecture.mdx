@@ -121,8 +121,8 @@ try {
 `connectTo()` is the seam between the transport-agnostic core and a concrete protocol.
 
 ```ts
-const app = await GlandFactory.create(AppModule)
-const server = app.connectTo(ExpressBroker)
+const { app } = await GlandFactory.create(AppModule)
+const http = app.connectTo(ExpressBroker)
 ```
 
 Three things happen, in order:
@@ -132,12 +132,13 @@ Three things happen, in order:
 2. The adapter's broker is connected to the core broker, so `gland:define:route`
    events cross between them.
 3. `adapter.initialize()` runs, subscribing to route definitions and returning the
-   application object you now hold.
+   application object you now hold. Routes that were broadcast during bootstrap — before
+   this adapter existed — are then replayed to it.
 
 <Aside type="note">
   `connectTo` is typed to return the adapter's application, so the object you get
   back is the real Express application with the full `HttpCore` surface —
-  `json()`, `use()`, `useStaticAssets()`, `setGlobalPrefix()` and so on.
+  `bodyParser()`, `use()`, `useStaticAssets()`, `setGlobalPrefix()` and so on.
 </Aside>
 
 ## Reading the debug output
