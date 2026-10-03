@@ -27,7 +27,6 @@
     "typecheck": "astro check",
     "astro": "astro"
   },
-  "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": ">=22",
     "pnpm": ">=11"
